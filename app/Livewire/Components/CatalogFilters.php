@@ -11,6 +11,8 @@ class CatalogFilters extends Component
     public array $categorySlugs = [];
     public array $brandSlugs = [];
     public string $sort = 'default';
+    public int $perPage = 12;
+
 
     public function mount()
     {
@@ -23,6 +25,7 @@ class CatalogFilters extends Component
             : [];
 
         $this->sort = request()->query('sort') ?? 'default';
+        $this->perPage = (int)(request()->query('perPage') ?? 12);
     }
 
 
@@ -58,6 +61,7 @@ class CatalogFilters extends Component
         return [
             'category' => implode(',', $this->categorySlugs),
             'brand' => implode(',', $this->brandSlugs),
+            'perPage' => $this->perPage,
             'sort' => $this->sort,
         ];
     }

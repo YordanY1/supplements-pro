@@ -23,6 +23,9 @@ class Catalog extends Component
     #[Url]
     public string $sort = 'default';
 
+    #[Url]
+    public int $perPage = 12;
+
     protected $listeners = ['filtersUpdated' => 'updateFilters'];
 
     public function updateFilters($data)
@@ -32,7 +35,9 @@ class Catalog extends Component
         $this->category = $data['category'] ?? '';
         $this->brand = $data['brand'] ?? '';
         $this->sort = $data['sort'] ?? 'default';
+        $this->perPage = $data['perPage'] ?? 12;
     }
+
 
     public function render()
     {
@@ -78,7 +83,7 @@ class Catalog extends Component
         }
 
         return view('livewire.pages.catalog', [
-            'products' => $query->paginate(12),
+            'products' => $query->paginate($this->perPage),
             'title' => $title,
         ])->layout('layouts.app');
     }

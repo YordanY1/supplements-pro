@@ -40,4 +40,21 @@
             </button>
         </div>
     </div>
+
+    <div>
+        <h3 class="text-lg font-semibold text-accent mb-4">Брой на страница</h3>
+        <div class="flex flex-wrap gap-2">
+            @foreach ([12, 24] as $count)
+                <button wire:click="$set('perPage', {{ $count }})"
+                    class="{{ $perPage === $count ? 'bg-accent text-black border-accent' : 'bg-card text-text border-white/10 hover:border-accent' }} px-4 py-2 rounded-full text-sm border transition">
+                    {{ $count }}
+                </button>
+            @endforeach
+
+            <button wire:click="$set('perPage', 10000)"
+                class="{{ $perPage >= 10000 ? 'bg-accent text-black border-accent' : 'bg-card text-text border-white/10 hover:border-accent' }} px-4 py-2 rounded-full text-sm border transition">
+                Всички
+            </button>
+        </div>
+    </div>
 </div>
