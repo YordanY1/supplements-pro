@@ -1,4 +1,4 @@
-<div class="bg-primary min-h-screen py-16 px-6 font-primary text-text">
+<div class="bg-primary min-h-screen py-16 px-6 font-primary text-text" id="product">
     <div class="max-w-7xl mx-auto">
         <h1 class="text-4xl font-extrabold text-accent mb-10 text-center">{{ $title }}</h1>
 
@@ -25,5 +25,11 @@
                 @endforelse
             </section>
         </div>
+
+        {{-- Pagination --}}
+        <div class="col-span-full flex justify-center mt-10">
+            {{ $products->links('vendor.livewire.components.pagination', data: ['scrollTo' => '#product']) }}
+        </div>
+
     </div>
 </div>

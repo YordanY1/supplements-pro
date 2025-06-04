@@ -7,9 +7,13 @@ use App\Models\Category;
 use App\Models\Brand;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithPagination;
+
 
 class Catalog extends Component
 {
+    use WithPagination;
+
     #[Url(as: 'category', history: true)]
     public string $category = '';
 
@@ -23,6 +27,8 @@ class Catalog extends Component
 
     public function updateFilters($data)
     {
+        $this->resetPage();
+
         $this->category = $data['category'] ?? '';
         $this->brand = $data['brand'] ?? '';
         $this->sort = $data['sort'] ?? 'default';
@@ -72,7 +78,7 @@ class Catalog extends Component
         }
 
         return view('livewire.pages.catalog', [
-            'products' => $query->get(),
+            'products' => $query->paginate(12),
             'title' => $title,
         ])->layout('layouts.app');
     }
