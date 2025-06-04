@@ -8,17 +8,18 @@
 
 @import '@fortawesome/fontawesome-free/css/all.min.css';
 
-
 @theme {
-    --color-primary: #1e1e2f;
-    --color-primary-light: #3a3a3a;
+    --color-primary: #0f0f0f;
+    --color-card: #1a1a1a;
     --color-text: #ffffff;
-    --color-accent: #d4af37;
-    --color-hover: #e5c100;
-    --color-gold-gradient-start: #d4af37;
-    --color-gold-gradient-end: #f3e48e;
+    --color-accent: #10b981;
+    /* emerald-500 */
+    --color-accent-2: #34d399;
+    /* emerald-400 */
+    --color-cta: #22c55e;
+    /* emerald-600 */
 
-    --font-primary: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+    --font-primary: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
         'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 }
 

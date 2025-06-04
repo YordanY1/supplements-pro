@@ -10,13 +10,13 @@
 </head>
 
 <body class="min-h-screen flex flex-col antialiased">
-    {{-- <livewire:components.navbar /> --}}
+    <livewire:components.header />
 
     <main class="flex flex-1 flex-col">
         {{ $slot }}
     </main>
 
-    {{-- <livewire:components.footer /> --}}
+    <livewire:components.footer />
 
     @livewireScripts
 </body>
