@@ -1,0 +1,92 @@
+@import 'tailwindcss';
+
+@source "../views";
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@import '@fortawesome/fontawesome-free/css/all.min.css';
+
+
+@theme {
+    --color-primary: #1e1e2f;
+    --color-primary-light: #3a3a3a;
+    --color-text: #ffffff;
+    --color-accent: #d4af37;
+    --color-hover: #e5c100;
+    --color-gold-gradient-start: #d4af37;
+    --color-gold-gradient-end: #f3e48e;
+
+    --font-primary: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+@keyframes fade-in {
+    0% {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes scale-fade-in {
+    0% {
+        opacity: 0;
+        transform: scale(0.97) translateY(6px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+
+@utilities {
+    .text-primary {
+        color: var(--color-primary);
+    }
+
+    .text-text {
+        color: var(--color-text);
+    }
+
+
+    .bg-primary {
+        background-color: var(--color-primary);
+    }
+
+    .hover\:bg-primary:hover {
+        background-color: var(--color-primary);
+    }
+
+    .bg-primary-light {
+        background-color: var(--color-primary-light);
+    }
+
+    .text-accent {
+        color: var(--color-accent);
+    }
+
+    .hover\:text-hover:hover {
+        color: var(--color-hover);
+    }
+
+    .bg-gradient-gold {
+        background-image: linear-gradient(to right, var(--color-gold-gradient-start), var(--color-gold-gradient-end));
+    }
+
+    .font-primary {
+        font-family: var(--font-primary);
+    }
+
+    .animate-scale-fade-in {
+        animation: scale-fade-in 0.3s ease-out both;
+    }
+
+}
