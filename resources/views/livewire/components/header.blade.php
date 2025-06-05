@@ -60,6 +60,11 @@
             </li>
         </ul>
 
+        {{-- Cart icon (desktop) --}}
+        <div class="hidden md:block">
+            <livewire:components.cart-badge />
+        </div>
+
         {{-- Burger Icon --}}
         <button @click="open = !open" class="md:hidden focus:outline-none transition text-accent text-2xl">
             <i :class="open ? 'fas fa-times' : 'fas fa-bars'"></i>
@@ -111,5 +116,9 @@
                 </ul>
             </li>
         </ul>
+        {{-- Cart icon (mobile) --}}
+        <div class="mt-4 md:hidden">
+            <livewire:components.cart-badge />
+        </div>
     </div>
 </nav>
