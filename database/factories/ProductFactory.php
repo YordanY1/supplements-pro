@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 use App\Models\Category;
 use App\Models\Brand;
+use App\Models\Currency;
+
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Product>
@@ -24,6 +26,7 @@ class ProductFactory extends Factory
             'slug' => Str::slug($this->faker->unique()->words(3, true)),
             'description' => $this->faker->paragraph(),
             'price' => $this->faker->randomFloat(2, 10, 200),
+            'currency_id' => Currency::inRandomOrder()->first()?->id ?? Currency::factory(),
             'category_id' => Category::inRandomOrder()->first()?->id ?? Category::factory(),
             'brand_id' => Brand::inRandomOrder()->first()?->id ?? Brand::factory(),
             'image' => 'images/products/default.jpg',

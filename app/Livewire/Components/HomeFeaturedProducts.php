@@ -7,9 +7,9 @@ use Livewire\Component;
 
 class HomeFeaturedProducts extends Component
 {
-    public function addToCart(int $productId): void
+    public function addToCart(int $productId)
     {
-        $product = Product::findOrFail($productId);
+        $product = Product::with('currency')->findOrFail($productId);
 
         $cart = session()->get('cart', []);
 
@@ -20,8 +20,10 @@ class HomeFeaturedProducts extends Component
                 'id' => $product->id,
                 'name' => $product->name,
                 'price' => $product->price,
-                'image' => $product->image ?? 'images/default.jpg',
+                'currency' => $product->currency->symbol ?? 'лв.',
                 'quantity' => 1,
+                'image' => $product->image,
+                'slug' => $product->slug,
             ];
         }
 

@@ -18,7 +18,10 @@
                         </div>
                         <h2 class="text-xl font-bold text-accent mb-2">{{ $product->name }}</h2>
                         <p class="text-sm text-text/60 mb-2">{{ $product->brand->name ?? 'Без марка' }}</p>
-                        <p class="text-lg font-semibold text-white">{{ number_format($product->price, 2) }} лв.</p>
+                        <p class="text-lg font-semibold text-white">
+                            {{ number_format($product->price, 2) }}
+                            {{ $product->currency?->symbol ?? 'лв.' }}
+                        </p>
 
                         <button wire:click="addToCart({{ $product->id }})"
                             class="mt-4 inline-block px-6 py-2 bg-accent text-white font-bold rounded-xl hover:bg-accent-2 transition cursor-pointer">

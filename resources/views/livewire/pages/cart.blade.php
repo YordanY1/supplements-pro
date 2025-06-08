@@ -9,7 +9,10 @@
                     class="w-16 h-16 object-contain bg-white p-2 rounded-lg shadow-sm" />
                 <div>
                     <h2 class="text-base font-semibold text-accent leading-snug">{{ $item['name'] }}</h2>
-                    <p class="text-sm text-white/60">{{ number_format($item['price'], 2) }} лв. / бр.</p>
+                    <p class="text-xl font-semibold text-white mb-4">
+                        {{ number_format($item['price'], 2) }}
+                        {{ is_array($item['currency']) ? $item['currency']['symbol'] ?? 'лв.' : $item['currency']->symbol ?? 'лв.' }}
+                    </p>
                 </div>
             </div>
 
@@ -39,13 +42,15 @@
     @if (count($cart))
         <div class="mt-12 border-t border-white/10 pt-6 text-right">
             <p class="text-2xl font-bold text-white mb-4">
-                Общо: <span class="text-accent">{{ number_format($this->total, 2) }} лв.</span>
+                Общо: <span class="text-accent">
+                    {{ number_format($this->total, 2) }} {{ $items[0]['currency']['symbol'] ?? 'лв.' }}
+                </span>
             </p>
 
-            {{-- <a wire:navigate href="{{ route('checkout') }}"
-               class="inline-block px-8 py-3 bg-cta text-white font-bold rounded-full shadow hover:bg-accent transition hover:scale-105 cursor-pointer">
+            <a wire:navigate href="{{ route('checkout') }}"
+                class="inline-block px-8 py-3 bg-cta text-white font-bold rounded-full shadow hover:bg-accent transition hover:scale-105 cursor-pointer">
                 Към поръчка
-            </a> --}}
+            </a>
         </div>
     @endif
 </div>
