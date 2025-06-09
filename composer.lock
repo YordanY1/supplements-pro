@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "73c1cb80f629f7c02e8ba7187adbb0f4",
+    "content-hash": "0ad2c630e7f4df154ca42cf5bb7ea4d3",
     "packages": [
         {
             "name": "brick/math",
@@ -580,6 +580,92 @@
                 }
             ],
             "time": "2023-10-12T05:21:21+00:00"
+        },
+        {
+            "name": "gdinko/econt",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/YordanY1/econt.git",
+                "reference": "a5dd11de838a60f277bca25677053937bb309f55"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/YordanY1/econt/zipball/a5dd11de838a60f277bca25677053937bb309f55",
+                "reference": "a5dd11de838a60f277bca25677053937bb309f55",
+                "shasum": ""
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^7.4",
+                "illuminate/support": "^8.0|^9.0|^10.0|^11.0|^12.0",
+                "php": "^7.4|^8.0|^8.1|^8.2|^8.3"
+            },
+            "require-dev": {
+                "nunomaduro/collision": "^5.11",
+                "nunomaduro/larastan": "^1.0",
+                "orchestra/testbench": "^6.0",
+                "pestphp/pest": "^1.21",
+                "pestphp/pest-plugin-laravel": "^1.2",
+                "phpstan/extension-installer": "^1.1",
+                "phpstan/phpstan-deprecation-rules": "^1.0",
+                "phpstan/phpstan-phpunit": "^1.1",
+                "phpunit/phpunit": "^9.0"
+            },
+            "default-branch": true,
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Gdinko\\Econt\\EcontServiceProvider"
+                    ],
+                    "aliases": {
+                        "Econt": "Gdinko\\Econt\\Facades\\Econt"
+                    }
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Gdinko\\Econt\\": "src"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Gdinko\\Econt\\Tests\\": "tests"
+                }
+            },
+            "scripts": {
+                "analyse": [
+                    "vendor/bin/phpstan analyse"
+                ],
+                "test": [
+                    "vendor/bin/pest"
+                ],
+                "test-coverage": [
+                    "vendor/bin/pest --coverage"
+                ]
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Dinko Georgiev",
+                    "email": "dinko359@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Laravel Econt API Wrapper",
+            "homepage": "https://github.com/gdinko/econt",
+            "keywords": [
+                "econt",
+                "econt laravel",
+                "gdinko",
+                "laravel"
+            ],
+            "support": {
+                "source": "https://github.com/YordanY1/econt/tree/master"
+            },
+            "time": "2025-06-08T16:44:47+00:00"
         },
         {
             "name": "graham-campbell/result-type",
@@ -8215,7 +8301,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": {
+        "gdinko/econt": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

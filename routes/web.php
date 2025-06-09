@@ -8,7 +8,7 @@ use App\Livewire\Pages\Cart;
 use App\Livewire\Pages\Checkout;
 use App\Livewire\Pages\ThankYou;
 use App\Livewire\Pages\TermsAndConditions;
-
+use App\Livewire\Pages\EcontOffices;
 
 Route::get('/', Home::class)->name('home');
 Route::get('/catalog', Catalog::class)->name('catalog');
@@ -18,3 +18,8 @@ Route::get('/cart', Cart::class)->name('cart');
 Route::get('/checkout', Checkout::class)->name('checkout');
 Route::get('/thank-you', ThankYou::class)->name('thank-you');
 Route::get('/terms-and-conditions', TermsAndConditions::class)->name('terms-and-conditions.index');
+
+
+
+// Econt Offices route
+Route::get('/econt-offices', EcontOffices::class);
