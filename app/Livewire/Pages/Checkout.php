@@ -18,6 +18,7 @@ use App\Services\EcontLabelService;
 
 class Checkout extends Component
 {
+    // === User input properties ===
     public $first_name = '';
     public $last_name = '';
     public $email = '';
@@ -25,8 +26,9 @@ class Checkout extends Component
     public $city = '';
     public $zip = '';
     public $street = '';
-    public $payment_method = 'card';
+    public $payment_method = 'card'; // Default is Stripe payment
 
+    // === Invoice fields ===
     public $invoiceRequested = false;
     public $companyName = '';
     public $companyID = '';
@@ -36,25 +38,31 @@ class Checkout extends Component
 
     public bool $terms_accepted = false;
 
+    // === Cart items from session ===
     public $cartItems = [];
 
+    // === Stripe event listener ===
     protected $listeners = ['stripeTokenReceived'];
 
+    // Load cart items from session
     public function mount()
     {
         $this->cartItems = session('cart', []);
     }
 
+    // Stripe token received from frontend
     public function stripeTokenReceived($token = null)
     {
         $this->pay($token);
     }
 
+    // Main checkout logic
     public function pay($token = null)
     {
         DB::beginTransaction();
 
         try {
+            // === Validate form input ===
             $validator = Validator::make(
                 $this->only([
                     'first_name',
@@ -76,6 +84,7 @@ class Checkout extends Component
             );
 
             if ($validator->fails()) {
+                // Pass errors to Livewire validation system
                 foreach ($validator->errors()->messages() as $field => $messages) {
                     foreach ($messages as $message) {
                         $this->addError($field, $message);
@@ -85,9 +94,9 @@ class Checkout extends Component
                 return;
             }
 
-            $validated = $validator->validated();
-
+            // === Get product info and subtotal ===
             $products = Product::whereIn('id', array_keys($this->cartItems))->get();
+
             $items = collect($products)->map(function ($product) {
                 $cartItem = $this->cartItems[$product->id] ?? ['quantity' => 1];
                 return [
@@ -99,8 +108,28 @@ class Checkout extends Component
                 ];
             });
 
-            $amount = $items->sum(fn($item) => (float) $item['price'] * (int) $item['quantity']);
+            $subtotal = $items->sum(fn($item) => (float) $item['price'] * $item['quantity']);
 
+            // === Temporary order object used for Econt shipping calculation ===
+            $tempOrder = new Order([
+                'first_name' => $this->first_name,
+                'last_name' => $this->last_name,
+                'phone' => $this->phone,
+                'city' => $this->city,
+                'zip' => $this->zip,
+                'street' => $this->street,
+                'payment_method' => $this->payment_method,
+            ]);
+
+            $shippingCost = EcontLabelService::calculateShipping($tempOrder);
+            if (is_null($shippingCost)) {
+                $this->addError('shipping', 'Shipping cost calculation failed.');
+                return;
+            }
+
+            $total = $subtotal + $shippingCost;
+
+            // === Save order to DB ===
             $order = Order::create([
                 'first_name' => $this->first_name,
                 'last_name' => $this->last_name,
@@ -110,7 +139,7 @@ class Checkout extends Component
                 'zip' => $this->zip,
                 'street' => $this->street,
                 'payment_method' => $this->payment_method,
-                'total' => $amount,
+                'total' => $total,
                 'invoice' => $this->invoiceRequested ? [
                     'company_name' => $this->companyName,
                     'company_id' => $this->companyID,
@@ -122,8 +151,7 @@ class Checkout extends Component
                 'terms_accepted_at' => now(),
             ]);
 
-            $response = EcontLabelService::createLabel($order, $amount);
-
+            // === Save each order item ===
             foreach ($items as $item) {
                 OrderItem::create([
                     'order_id' => $order->id,
@@ -135,20 +163,21 @@ class Checkout extends Component
                 ]);
             }
 
+            // === Process Stripe payment ===
             if ($this->payment_method === 'card') {
                 if (!$token) {
-                    $this->addError('stripe', 'Невалиден Stripe токен.');
+                    $this->addError('stripe', 'Invalid Stripe token.');
                     return;
                 }
 
                 Stripe::setApiKey(config('services.stripe.secret'));
 
                 PaymentIntent::create([
-                    'amount' => $amount * 100,
+                    'amount' => $total * 100, // amount in cents
                     'currency' => 'bgn',
                     'payment_method' => $token,
                     'confirm' => true,
-                    'description' => 'Поръчка от ' . $this->first_name . ' ' . $this->last_name,
+                    'description' => 'Order from ' . $this->first_name . ' ' . $this->last_name,
                     'metadata' => [
                         'email' => $this->email,
                         'order_id' => $order->id
@@ -160,35 +189,35 @@ class Checkout extends Component
                 ]);
             }
 
+            // === Create Econt shipping label ===
+            EcontLabelService::createLabel($order, $total);
+
             DB::commit();
 
+            // === Finalize and redirect ===
             $this->dispatch('orderComplete');
             session()->forget('cart');
-            session()->flash('success', 'Поръчката беше приета успешно!');
+            session()->flash('success', 'Order was successfully placed!');
             return redirect()->to('/thank-you');
         } catch (\Throwable $e) {
+            // === Handle any exceptions ===
+            DB::rollBack();
+
+            \Log::error('❌ Checkout error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
             if (method_exists($e, 'getResponse') && $e->getResponse()) {
-                $body = json_decode($e->getResponse()->getBody(), true);
-                Log::error('Econt response body', $body ?? []);
-            }
-
-            Log::error('❌ Грешка при създаване на товарителница: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
-        } catch (\Throwable $e) {
-            Log::error('❌ Грешка при създаване на товарителница: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            if (method_exists($e, 'getResponse')) {
                 $response = json_decode($e->getResponse()?->getBody(), true);
-                Log::error('📨 Econt full response', $response);
+                \Log::error('📨 API response error', $response ?? []);
             }
 
+            $this->addError('general', 'Something went wrong. Please try again.');
             return null;
         }
     }
 
+    // === Render the checkout page view ===
     public function render()
     {
         $products = Product::whereIn('id', array_keys($this->cartItems))->get();
