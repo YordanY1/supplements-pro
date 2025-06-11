@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('city');
             $table->string('zip');
             $table->string('street');
+            $table->float('weight')->nullable();
             $table->json('invoice')->nullable();
             $table->boolean('terms_accepted')->default(false);
             $table->timestamp('terms_accepted_at')->nullable();

@@ -38,7 +38,7 @@
                 <div>
                     <label for="phone" class="block text-sm font-medium text-[var(--color-text)] mb-1">Телефонен
                         номер*</label>
-                    <input type="text" id="phone" wire:model.defer="phone"
+                    <input type="text" id="phone" wire:model="phone" wire:blur="$refresh"
                         class="w-full bg-transparent border border-gray-600 text-white rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent">
                     @error('phone')
                         <span class="text-sm text-red-500">{{ $message }}</span>
@@ -48,7 +48,7 @@
                 <div>
                     <label for="city"
                         class="block text-sm font-medium text-[var(--color-text)] mb-1">Град/Село*</label>
-                    <input type="text" id="city" wire:model.defer="city"
+                    <input type="text" id="city" wire:model="city" wire:blur="$refresh"
                         class="w-full bg-transparent border border-gray-600 text-white rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent">
                     @error('city')
                         <span class="text-sm text-red-500">{{ $message }}</span>
@@ -58,7 +58,7 @@
                 <div>
                     <label for="zip" class="block text-sm font-medium text-[var(--color-text)] mb-1">Пощенски
                         код*</label>
-                    <input type="text" id="zip" wire:model.defer="zip"
+                    <input type="text" id="zip" wire:model="zip" wire:blur="$refresh"
                         class="w-full bg-transparent border border-gray-600 text-white rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent">
                     @error('zip')
                         <span class="text-sm text-red-500">{{ $message }}</span>
@@ -67,7 +67,7 @@
 
                 <div class="md:col-span-2">
                     <label for="street" class="block text-sm font-medium text-[var(--color-text)] mb-1">Улица*</label>
-                    <input type="text" id="street" wire:model.defer="street"
+                    <input type="text" id="street" wire:model="street" wire:blur="$refresh"
                         class="w-full bg-transparent border border-gray-600 text-white rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent">
                     @error('street')
                         <span class="text-sm text-red-500">{{ $message }}</span>
@@ -220,12 +220,33 @@
             @endforeach
         </ul>
 
-        <div class="flex justify-between text-lg font-semibold text-white border-t border-gray-600 pt-4">
-            <span>Общо:</span>
-            <span>
-                {{ number_format($total, 2) }} {{ $items[0]['currency']['symbol'] ?? 'лв.' }}
-            </span>
-
+        <div x-data="{
+            shipping: @entangle('shippingCost'),
+            total: @entangle('totalWithShipping'),
+            animateValue(el, value) {
+                el.classList.add('opacity-0', 'scale-95');
+                setTimeout(() => {
+                    el.textContent = Number(value).toLocaleString('bg-BG', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+                    el.classList.remove('opacity-0', 'scale-95');
+                    el.classList.add('opacity-100', 'scale-100');
+                }, 100);
+            }
+        }" x-init="$watch('shipping', value => animateValue($refs.shipping, value));
+        $watch('total', value => animateValue($refs.total, value));"
+            class="flex justify-between text-lg font-semibold text-white border-t border-gray-600 pt-4 space-x-4">
+            <div>
+                Доставка:
+                <span x-ref="shipping"
+                    class="inline-block transition-all duration-300 ease-out opacity-100 scale-100">
+                    {{ number_format($shippingCost, 2) }}
+                </span> лв.
+            </div>
+            <div class="font-semibold">
+                Обща сума с доставка:
+                <span x-ref="total" class="inline-block transition-all duration-300 ease-out opacity-100 scale-100">
+                    {{ number_format($totalWithShipping, 2) }}
+                </span> лв.
+            </div>
         </div>
 
 
@@ -251,19 +272,33 @@
 
         <button x-data="{
             loading: false,
+            shipping: @entangle('shippingCost'),
+            get disabled() {
+                return this.loading || this.shipping <= 0;
+            },
+            get buttonText() {
+                if (this.shipping <= 0) return 'Калкулиране на цялата цена...';
+                return this.loading ?
+                    'Моля изчакайте...' :
+                    ($wire.payment_method === 'cod' ?
+                        'Поръчка с наложен платеж' :
+                        'Плащане с карта');
+            },
             init() {
                 window.addEventListener('orderComplete', () => {
                     this.loading = false;
                 });
             }
         }"
-            @click="loading = true;
+            @click="if (!disabled) {
+        loading = true;
         if ($wire.payment_method === 'cod') {
             $wire.pay().then(() => loading = false);
         } else {
             pay();
-        }"
-            :disabled="loading"
+        }
+    }"
+            :disabled="disabled"
             class="w-full mt-4 bg-[var(--color-cta)] text-white py-3 rounded-lg hover:bg-emerald-700 transition font-medium shadow cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
             <template x-if="loading">
                 <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
@@ -274,12 +309,7 @@
                         d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z" />
                 </svg>
             </template>
-            <span class="text-white"
-                x-text="loading
-        ? 'Моля изчакайте...'
-        : ($wire.payment_method === 'cod'
-            ? 'Поръчка с наложен платеж'
-            : 'Плащане с карта')">
-            </span>
+            <span x-text="buttonText"></span>
         </button>
+
     </div>

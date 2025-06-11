@@ -15,6 +15,8 @@ use Livewire\Component;
 use Stripe\PaymentIntent;
 use Stripe\Stripe;
 use App\Services\EcontLabelService;
+use App\Data\ShippingData;
+use Illuminate\Support\Facades\Log;
 
 class Checkout extends Component
 {
@@ -27,6 +29,8 @@ class Checkout extends Component
     public $zip = '';
     public $street = '';
     public $payment_method = 'card'; // Default is Stripe payment
+    public $shippingCost = 0;
+    public $totalWithShipping = 0;
 
     // === Invoice fields ===
     public $invoiceRequested = false;
@@ -48,7 +52,10 @@ class Checkout extends Component
     public function mount()
     {
         $this->cartItems = session('cart', []);
+        $this->calculateLiveShipping();
     }
+
+
 
     // Stripe token received from frontend
     public function stripeTokenReceived($token = null)
@@ -84,7 +91,6 @@ class Checkout extends Component
             );
 
             if ($validator->fails()) {
-                // Pass errors to Livewire validation system
                 foreach ($validator->errors()->messages() as $field => $messages) {
                     foreach ($messages as $message) {
                         $this->addError($field, $message);
@@ -105,21 +111,25 @@ class Checkout extends Component
                     'price' => $product->price,
                     'currency' => $product->currency,
                     'quantity' => (int) $cartItem['quantity'],
+                    'weight' => (float) ($product->weight ?? 1.0),
                 ];
             });
 
             $subtotal = $items->sum(fn($item) => (float) $item['price'] * $item['quantity']);
+            $totalWeight = $items->sum(fn($item) => (float) $item['weight'] * (int) $item['quantity']);
 
             // === Temporary order object used for Econt shipping calculation ===
-            $tempOrder = new Order([
-                'first_name' => $this->first_name,
-                'last_name' => $this->last_name,
-                'phone' => $this->phone,
-                'city' => $this->city,
-                'zip' => $this->zip,
-                'street' => $this->street,
-                'payment_method' => $this->payment_method,
-            ]);
+            $tempOrder = new ShippingData(
+                first_name: $this->first_name,
+                last_name: $this->last_name,
+                phone: $this->phone,
+                city: $this->city,
+                zip: $this->zip,
+                street: $this->street,
+                payment_method: $this->payment_method,
+                weight: $totalWeight
+            );
+
 
             $shippingCost = EcontLabelService::calculateShipping($tempOrder);
             if (is_null($shippingCost)) {
@@ -140,6 +150,7 @@ class Checkout extends Component
                 'street' => $this->street,
                 'payment_method' => $this->payment_method,
                 'total' => $total,
+                'weight' => $totalWeight,
                 'invoice' => $this->invoiceRequested ? [
                     'company_name' => $this->companyName,
                     'company_id' => $this->companyID,
@@ -151,7 +162,6 @@ class Checkout extends Component
                 'terms_accepted_at' => now(),
             ]);
 
-            // === Save each order item ===
             foreach ($items as $item) {
                 OrderItem::create([
                     'order_id' => $order->id,
@@ -163,7 +173,6 @@ class Checkout extends Component
                 ]);
             }
 
-            // === Process Stripe payment ===
             if ($this->payment_method === 'card') {
                 if (!$token) {
                     $this->addError('stripe', 'Invalid Stripe token.');
@@ -173,7 +182,7 @@ class Checkout extends Component
                 Stripe::setApiKey(config('services.stripe.secret'));
 
                 PaymentIntent::create([
-                    'amount' => $total * 100, // amount in cents
+                    'amount' => $total * 100,
                     'currency' => 'bgn',
                     'payment_method' => $token,
                     'confirm' => true,
@@ -189,18 +198,15 @@ class Checkout extends Component
                 ]);
             }
 
-            // === Create Econt shipping label ===
             EcontLabelService::createLabel($order, $total);
 
             DB::commit();
 
-            // === Finalize and redirect ===
             $this->dispatch('orderComplete');
             session()->forget('cart');
             session()->flash('success', 'Order was successfully placed!');
             return redirect()->to('/thank-you');
         } catch (\Throwable $e) {
-            // === Handle any exceptions ===
             DB::rollBack();
 
             \Log::error('❌ Checkout error: ' . $e->getMessage(), [
@@ -216,6 +222,91 @@ class Checkout extends Component
             return null;
         }
     }
+
+
+    public function updated($property)
+    {
+        \Log::debug("🟡 Property updated: $property");
+
+        if (in_array($property, ['city', 'zip', 'street', 'payment_method'])) {
+            \Log::debug("🔵 Triggering shipping calculation for: $property");
+            $this->calculateLiveShipping();
+            $this->dispatch('$refresh');
+        }
+    }
+
+    public function calculateLiveShipping()
+    {
+        \Log::debug("🟢 Calculating shipping for:", [
+            'city' => $this->city,
+            'zip' => $this->zip,
+            'street' => $this->street,
+            'payment_method' => $this->payment_method,
+        ]);
+
+
+        if (strlen($this->city) > 1 && strlen($this->zip) > 1 && strlen($this->street) > 3) {
+            $products = Product::whereIn('id', array_keys($this->cartItems))->get();
+
+            $items = $products->map(function ($product) {
+                $cartItem = $this->cartItems[$product->id] ?? ['quantity' => 1];
+                return [
+                    'weight' => (float) ($product->weight ?? 1.0),
+                    'quantity' => (int) $cartItem['quantity'],
+                ];
+            });
+
+            $totalWeight = $items->sum(fn($item) => (float) $item['weight'] * (int) $item['quantity']);
+
+            Log::debug('📦 Calculated totalWeight:', [
+                'items' => $items,
+                'totalWeight' => $totalWeight,
+            ]);
+
+
+
+            $tempOrder = new ShippingData(
+                first_name: $this->first_name,
+                last_name: $this->last_name,
+                phone: $this->phone,
+                city: $this->city,
+                zip: $this->zip,
+                street: $this->street,
+                payment_method: $this->payment_method,
+                weight: $totalWeight
+            );
+
+            Log::debug('📬 ShippingData DTO created', (array) $tempOrder);
+
+            Log::debug('🧮 Product weights and quantities', [
+                'cart' => $this->cartItems,
+                'products' => $items,
+            ]);
+
+            $cost = EcontLabelService::calculateShipping($tempOrder);
+            \Log::debug("🧾 Shipping cost returned:", ['cost' => $cost]);
+
+            $this->shippingCost = $cost ?? 0;
+        } else {
+            \Log::warning("❗ Not enough address data to calculate shipping", [
+                'city' => $this->city,
+                'zip' => $this->zip,
+                'street' => $this->street,
+            ]);
+        }
+
+        $subtotal = collect($this->cartItems)->reduce(function ($carry, $item) {
+            $product = Product::find($item['id']);
+            return $carry + ($product->price * $item['quantity']);
+        }, 0);
+
+        \Log::debug("💰 Subtotal: $subtotal, Shipping: {$this->shippingCost}");
+
+        $this->totalWithShipping = $subtotal + $this->shippingCost;
+        \Log::debug("✅ Total with shipping: {$this->totalWithShipping}");
+    }
+
+
 
     // === Render the checkout page view ===
     public function render()

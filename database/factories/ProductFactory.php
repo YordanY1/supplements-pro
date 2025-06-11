@@ -26,6 +26,7 @@ class ProductFactory extends Factory
             'slug' => Str::slug($this->faker->unique()->words(3, true)),
             'description' => $this->faker->paragraph(),
             'price' => $this->faker->randomFloat(2, 10, 200),
+            'weight' => $this->faker->randomFloat(2, 0.1, 5.0),
             'currency_id' => Currency::inRandomOrder()->first()?->id ?? Currency::factory(),
             'category_id' => Category::inRandomOrder()->first()?->id ?? Category::factory(),
             'brand_id' => Brand::inRandomOrder()->first()?->id ?? Brand::factory(),

@@ -55,6 +55,7 @@ class Catalog extends Component
                 'quantity' => 1,
                 'image' => $product->image,
                 'slug' => $product->slug,
+                'weight' => $product->weight,
             ];
         }
 

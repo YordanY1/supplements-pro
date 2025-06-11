@@ -4,29 +4,31 @@ namespace App\Services;
 
 use Gdinko\Econt\Facades\Econt;
 use Gdinko\Econt\Hydrators\Label;
-use Illuminate\Support\Facades\Log;
 use App\Models\Order;
+use App\Data\ShippingData;
+use Illuminate\Support\Facades\Log;
 
 class EcontLabelService
 {
     /**
-     * Calculate shipping price based on order details without creating a shipping label.
+     * Calculate shipping price based on user-provided data (not saved Order).
      * This uses Econt's 'calculate' API method to simulate the delivery cost.
      *
-     * @param Order $order
+     * @param ShippingData $data
      * @return float|null
      */
-    public static function calculateShipping(Order $order): ?float
+    public static function calculateShipping(ShippingData $data): ?float
     {
         Log::debug('📥 calculateShipping input', [
-            'city' => $order->city,
-            'zip' => $order->zip,
-            'street' => $order->street,
+            'city' => $data->city,
+            'zip' => $data->zip,
+            'street' => $data->street,
+            'weight' => $data->weight,
         ]);
 
         try {
             // Prepare label data without cash-on-delivery
-            $labelData = self::buildLabelData($order);
+            $labelData = self::buildLabelData($data);
             Log::debug('📤 Sending calculate request to Econt', $labelData);
 
             // Use 'calculate' method to simulate shipping cost
@@ -103,77 +105,84 @@ class EcontLabelService
      * Builds the full data array needed to calculate or create a shipment label via Econt.
      * This data includes sender and receiver info, address formatting, and optional COD setup.
      *
-     * @param Order $order  The order instance containing user-provided shipping info.
+     * @param Order|ShippingData $data  The data instance (Order or DTO) containing shipping info.
      * @param float $amount The total amount to be collected on delivery (used only if payment is cash).
      * @return array        The structured data to send to Econt API.
      */
-    protected static function buildLabelData(Order $order, float $amount = 0): array
+    protected static function buildLabelData($data, float $amount = 0): array
     {
-        // Load sender data from config (e.g. name, phone, city, zip, street, num)
+
+        if (!isset($data->weight) || $data->weight <= 0) {
+            Log::warning('⚠️ Weight not properly set in Econt label data', [
+                'source' => $data instanceof Order ? 'Order' : 'ShippingData',
+                'weight' => $data->weight ?? null,
+            ]);
+        }
+
         $sender = config('econt.sender');
 
-        // Format receiver full name from first and last names
-        $receiverName = "{$order->first_name} {$order->last_name}";
+        // Detect type: Order or ShippingData
+        if ($data instanceof Order) {
+            $receiverName = "{$data->first_name} {$data->last_name}";
+            $paymentMethod = $data->payment_method;
+        } else {
+            $receiverName = $data->receiver_name ?? 'Клиент';
+            $paymentMethod = 'card'; // default or from DTO in бъдеще
+        }
 
-        // Attempt to split the street into name and number
-        $streetName = $order->street;
+        $streetName = $data->street;
         $streetNum = 1;
 
-        // Try to extract street name and number (e.g. "Mesta 12" => "Mesta", 12)
-        if (preg_match('/^(.*?)[\s,]+(\d+)$/u', $order->street, $matches)) {
+        if (preg_match('/^(.*?)[\s,]+(\d+)$/u', $data->street, $matches)) {
             $streetName = $matches[1];
             $streetNum = (int) $matches[2];
         } else {
-            // Log if the address couldn't be parsed (still proceeds with defaults)
-            Log::warning('⚠️ Failed to parse street', ['street' => $order->street]);
+            Log::warning('⚠️ Failed to parse street', ['street' => $data->street]);
         }
 
-        // Define base services - SMS notification is always enabled
         $services = ['smsNotification' => true];
 
-        // If the order is cash on delivery, add COD-specific fields
-        if ($order->payment_method === 'cash') {
-            $services['cdAmount'] = number_format($amount, 2, '.', '');  // Amount to collect
-            $services['cdType'] = 'get';                                  // Receiver pays
-            $services['cdCurrency'] = 'BGN';                              // Currency is Bulgarian lev
+        if ($paymentMethod === 'cash') {
+            $services['cdAmount'] = number_format($amount, 2, '.', '');
+            $services['cdType'] = 'get';
+            $services['cdCurrency'] = 'BGN';
         }
 
-        // Return the full label data array, structured for Econt API
         return [
             'senderClient' => [
-                'name'   => $sender['name'],                  // Sender company or person name
-                'phones' => [$sender['phone']],               // Sender phone number as array
+                'name'   => $sender['name'],
+                'phones' => [$sender['phone']],
             ],
             'senderAddress' => [
                 'city' => [
-                    'country'  => ['code3' => 'BGR'],         // 3-letter ISO code for Bulgaria
-                    'name'     => $sender['city'],            // Sender city name
-                    'postCode' => (int) $sender['zip'],       // Sender postal code
+                    'country'  => ['code3' => 'BGR'],
+                    'name'     => $sender['city'],
+                    'postCode' => (int) $sender['zip'],
                 ],
-                'street' => $sender['street'],                // Sender street name
-                'num'    => (int) $sender['num'],             // Sender street number
+                'street' => $sender['street'],
+                'num'    => (int) $sender['num'],
             ],
             'receiverClient' => [
-                'name'   => $receiverName,                    // Receiver full name
-                'phones' => [$order->phone],                  // Receiver phone number as array
+                'name'   => $receiverName,
+                'phones' => [$data->phone],
             ],
             'receiverAddress' => [
                 'city' => [
-                    'country'  => ['code3' => 'BGR'],         // Receiver country (always Bulgaria)
-                    'name'     => $order->city,               // Receiver city
-                    'postCode' => (int) $order->zip,          // Receiver ZIP code
+                    'country'  => ['code3' => 'BGR'],
+                    'name'     => $data->city,
+                    'postCode' => (int) $data->zip,
                 ],
-                'street' => $streetName,                      // Extracted street name
-                'num'    => $streetNum,                       // Extracted or fallback street number
+                'street' => $streetName,
+                'num'    => $streetNum,
             ],
-            'packCount'           => 1,                       // Always sending one package
-            'shipmentType'        => 'PACK',                  // Standard package type
-            'weight'              => 1.0,                     // Default package weight in kg
-            'shipmentDescription' => 'Поръчка от онлайн магазин',  // Short shipment note
-            'services'            => $services,               // Econt services (SMS, COD)
-            'payAfterAccept'      => false,                   // Do not use "Pay after accept" service
-            'payAfterTest'        => false,                   // Do not allow test before pay
-            'holidayDeliveryDay'  => 'workday',               // Allow delivery on working days only
+            'packCount'           => 1,
+            'shipmentType'        => 'PACK',
+            'weight' => $data->weight,
+            'shipmentDescription' => 'Поръчка от онлайн магазин',
+            'services'            => $services,
+            'payAfterAccept'      => false,
+            'payAfterTest'        => false,
+            'holidayDeliveryDay'  => 'workday',
         ];
     }
 }
