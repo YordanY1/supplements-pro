@@ -2,17 +2,30 @@
 
 namespace App\Livewire\Components;
 
-use App\Models\Category;
-use App\Models\Brand;
 use Livewire\Component;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
+use App\Services\Fitness1Service;
+
+
 
 class Header extends Component
 {
+    public $categories = [];
+    public $brands = [];
+
+    public function mount(Fitness1Service $fitness)
+    {
+        $this->categories = $fitness->getCategories();
+        $this->brands = $fitness->getBrands();
+    }
+
+
     public function render()
     {
         return view('livewire.components.header', [
-            'categories' => Category::orderBy('name')->get(),
-            'brands' => Brand::orderBy('name')->get(),
+            'categories' => $this->categories,
+            'brands' => $this->brands,
         ]);
     }
 }

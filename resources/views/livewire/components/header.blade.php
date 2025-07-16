@@ -17,6 +17,7 @@
                 </a>
             </li>
 
+            {{-- Categories Dropdown --}}
             <li class="relative" x-data="{ open: false, timeout: null }" @mouseenter="clearTimeout(timeout); open = true"
                 @mouseleave="timeout = setTimeout(() => open = false, 200)">
                 <a href="{{ route('catalog') }}"
@@ -25,19 +26,22 @@
                     Категории
                 </a>
                 <ul x-show="open" x-transition
-                    class="absolute left-0 top-full bg-primary mt-2 rounded-xl shadow-xl border border-white/10 min-w-[200px] z-50"
+                    class="absolute left-0 top-full bg-primary mt-2 rounded-xl shadow-xl border border-white/10 min-w-[200px] z-50
+           max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-accent scrollbar-track-white/10"
                     @click.away="open = false">
                     @foreach ($categories as $category)
                         <li>
-                            <a wire:navigate href="{{ route('catalog.category', $category->slug) }}"
+                            <a wire:navigate href="{{ route('catalog.category', $category['slug']) }}"
                                 class="block px-4 py-2 hover:text-accent transition text-sm">
-                                {{ $category->name }}
+                                {{ $category['name'] }}
                             </a>
                         </li>
                     @endforeach
                 </ul>
+
             </li>
 
+            {{-- Brands Dropdown --}}
             <li class="relative" x-data="{ open: false, timeout: null }" @mouseenter="clearTimeout(timeout); open = true"
                 @mouseleave="timeout = setTimeout(() => open = false, 200)">
                 <a href="{{ route('catalog') }}"
@@ -46,17 +50,19 @@
                     Марки
                 </a>
                 <ul x-show="open" x-transition
-                    class="absolute left-0 top-full bg-primary mt-2 rounded-xl shadow-xl border border-white/10 min-w-[200px] z-50"
+                    class="absolute left-0 top-full bg-primary mt-2 rounded-xl shadow-xl border border-white/10 min-w-[200px] z-50
+           max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-accent scrollbar-track-white/10"
                     @click.away="open = false">
                     @foreach ($brands as $brand)
                         <li>
-                            <a wire:navigate href="{{ route('catalog.brand', $brand->slug) }}"
+                            <a wire:navigate href="{{ route('catalog.brand', $brand['slug']) }}"
                                 class="block px-4 py-2 hover:text-accent transition text-sm">
-                                {{ $brand->name }}
+                                {{ $brand['name'] }}
                             </a>
                         </li>
                     @endforeach
                 </ul>
+
             </li>
         </ul>
 
@@ -80,42 +86,46 @@
                 </a>
             </li>
 
+            {{-- Categories Dropdown --}}
             <li x-data="{ openCat: false }">
                 <button @click="openCat = !openCat"
                     class="w-full text-left flex justify-between items-center hover:text-accent transition">
                     Категории
                     <i :class="openCat ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
                 </button>
-                <ul x-show="openCat" x-transition class="pl-4 mt-2 space-y-1 text-lg">
+                <ul x-show="openCat" x-transition class="pl-4 mt-2 space-y-1 text-lg max-h-[300px] overflow-y-auto">
                     @foreach ($categories as $category)
                         <li>
-                            <a wire:navigate href="{{ route('catalog.category', $category->slug) }}"
+                            <a wire:navigate href="{{ route('catalog.category', $category['slug']) }}"
                                 class="block hover:text-accent">
-                                {{ $category->name }}
+                                {{ $category['name'] }}
                             </a>
                         </li>
                     @endforeach
                 </ul>
             </li>
 
+            {{-- Brands Dropdown --}}
             <li x-data="{ openBrand: false }">
                 <button @click="openBrand = !openBrand"
                     class="w-full text-left flex justify-between items-center hover:text-accent transition">
                     Марки
                     <i :class="openBrand ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
                 </button>
-                <ul x-show="openBrand" x-transition class="pl-4 mt-2 space-y-1 text-lg">
+                <ul x-show="openBrand" x-transition class="pl-4 mt-2 space-y-1 text-lg max-h-[300px] overflow-y-auto">
                     @foreach ($brands as $brand)
                         <li>
-                            <a wire:navigate href="{{ route('catalog.brand', $brand->slug) }}"
+                            <a wire:navigate href="{{ route('catalog.brand', $brand['slug']) }}"
                                 class="block hover:text-accent">
-                                {{ $brand->name }}
+                                {{ $brand['name'] }}
                             </a>
                         </li>
                     @endforeach
                 </ul>
+
             </li>
         </ul>
+
         {{-- Cart icon (mobile) --}}
         <div class="mt-4 md:hidden">
             <livewire:components.cart-badge />

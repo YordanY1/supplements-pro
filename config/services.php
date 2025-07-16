@@ -40,5 +40,9 @@ return [
         'secret' => env('STRIPE_SECRET'),
     ],
 
+    'fitness1' => [
+        'key' => env('FITNESS1_API_KEY'),
+        'base_url' => env('FITNESS1_API_URL'),
+    ],
 
 ];
