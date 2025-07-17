@@ -45,4 +45,8 @@ return [
         'base_url' => env('FITNESS1_API_URL'),
     ],
 
+    'revita' => [
+        'url' => env('REVITA_API_URL'),
+    ],
+
 ];

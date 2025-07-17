@@ -3,23 +3,18 @@
 namespace App\Livewire\Components;
 
 use Livewire\Component;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Str;
-use App\Services\Fitness1Service;
-
-
+use App\Services\SupplementsAggregatorService;
 
 class Header extends Component
 {
     public $categories = [];
     public $brands = [];
 
-    public function mount(Fitness1Service $fitness)
+    public function mount(SupplementsAggregatorService $supplements)
     {
-        $this->categories = $fitness->getCategories();
-        $this->brands = $fitness->getBrands();
+        $this->categories = $supplements->getCategories();
+        $this->brands = $supplements->getBrands();
     }
-
 
     public function render()
     {
