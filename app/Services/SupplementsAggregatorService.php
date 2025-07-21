@@ -10,14 +10,15 @@ class SupplementsAggregatorService
     protected Fitness1Service $fitness;
     protected RevitaService $revita;
 
+    protected ?array $productsCache = null;
+
     public function __construct(Fitness1Service $fitness, RevitaService $revita)
     {
         $this->fitness = $fitness;
         $this->revita = $revita;
     }
 
-
-    public function getProducts(): array
+    protected function loadProducts(): array
     {
         return Cache::remember('supplements.all_products', now()->addMinutes(10), function () {
             $fitnessProducts = $this->fitness->getProducts();
@@ -38,12 +39,15 @@ class SupplementsAggregatorService
         });
     }
 
+    public function getProducts(): array
+    {
+        return $this->productsCache ??= $this->loadProducts();
+    }
+
     public function getCategories(): array
     {
         return Cache::remember('supplements.categories', now()->addMinutes(10), function () {
-            $products = $this->getProducts();
-
-            return collect($products)
+            return collect($this->getProducts())
                 ->pluck('category')
                 ->map(fn($cat) => explode(' > ', $cat)[0])
                 ->filter()
@@ -61,9 +65,7 @@ class SupplementsAggregatorService
     public function getBrands(): array
     {
         return Cache::remember('supplements.brands', now()->addMinutes(10), function () {
-            $products = $this->getProducts();
-
-            return collect($products)
+            return collect($this->getProducts())
                 ->pluck('brand_name')
                 ->filter()
                 ->unique()
@@ -82,5 +84,4 @@ class SupplementsAggregatorService
         return collect($this->getProducts())
             ->firstWhere('id', $id);
     }
-
 }
