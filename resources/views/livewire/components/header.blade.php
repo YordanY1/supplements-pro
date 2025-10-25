@@ -66,6 +66,11 @@
             </li>
         </ul>
 
+        {{-- Search (desktop) --}}
+        <div class="hidden md:block w-64">
+            <livewire:components.product-search />
+        </div>
+
         {{-- Cart icon (desktop) --}}
         <div class="hidden md:block">
             <livewire:components.cart-badge />
@@ -125,6 +130,10 @@
 
             </li>
         </ul>
+
+        <div class="mt-4 md:hidden">
+            <livewire:components.product-search />
+        </div>
 
         {{-- Cart icon (mobile) --}}
         <div class="mt-4 md:hidden">
