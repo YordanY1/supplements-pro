@@ -9,29 +9,40 @@
             @foreach ($products as $product)
                 <div
                     class="bg-primary/50 p-6 rounded-2xl border border-white/10 shadow-xl hover:shadow-2xl transition duration-300 text-center">
-                    <div class="bg-white p-4 rounded-xl mb-6">
-                        <img src="{{ asset($product->image ?? 'images/default.jpg') }}" alt="{{ $product->name }}"
-                            class="mx-auto h-[300px] w-auto object-contain" />
-                    </div>
 
-                    <h3 class="text-xl font-bold text-accent mb-2">{{ $product->name }}</h3>
-                    <p class="text-base text-text/60 mb-2">{{ $product->brand->name ?? 'Без марка' }}</p>
-                    <p class="text-xl font-semibold text-white mb-4">
-                        {{ number_format($product->price, 2) }} {{ $product->currency?->symbol ?? 'лв.' }}
-                    </p>
+                    {{-- Clickable product card --}}
+                    <a href="{{ route('product.show', $product['slug']) }}" class="block hover:scale-[1.02] transition">
+                        <div class="bg-white p-4 rounded-xl mb-6">
+                            <img src="{{ $product['image'] ?? asset('images/default.jpg') }}"
+                                alt="{{ $product['title'] }}" class="mx-auto h-[300px] w-auto object-contain" />
+                        </div>
 
+                        <h3 class="text-xl font-bold text-accent mb-2">
+                            {{ $product['title'] }}
+                        </h3>
 
-                    <button wire:click="addToCart({{ $product->id }})"
-                        class="px-6 py-2 bg-accent text-white font-bold rounded-full hover:bg-accent-2 transition duration-200 cursor-pointer">
+                        <p class="text-base text-text/60 mb-2">
+                            {{ $product['brand_name'] ?? 'Без марка' }}
+                        </p>
+
+                        <p class="text-xl font-semibold text-white mb-4">
+                            {{ number_format($product['price'], 2) }} {{ $product['currency_symbol'] ?? 'лв.' }}
+                        </p>
+                    </a>
+
+                    {{-- Add to Cart --}}
+                    <button wire:click="addToCart('{{ $product['id'] }}')"
+                        class="px-6 py-2 bg-accent text-white font-bold rounded-full hover:bg-accent-2 transition duration-200 cursor-pointer w-full">
                         Добави в количката
                     </button>
                 </div>
             @endforeach
+
         </div>
 
         <div class="mt-16">
             <a wire:navigate href="{{ route('catalog') }}"
-                class="inline-flex items-center gap-3 px-10 py-4 rounded-full text-white font-bold text-lg bg-cta hover:bg-accent-2 transition-all duration-300 shadow-xl hover:scale-105">
+                class="inline-flex items-center gap-3 px-10 py-4 rounded-full text-dark font-semibold text-lg bg-primary hover:bg-secondary transition-all duration-300 shadow-md hover:shadow-lg hover:scale-[1.02]">
                 <i class="fas fa-shopping-cart"></i> Виж всички продукти
             </a>
         </div>

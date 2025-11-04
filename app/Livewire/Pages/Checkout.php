@@ -2,37 +2,25 @@
 
 namespace App\Livewire\Pages;
 
-use App\Mail\NewOrderMail;
-use App\Mail\OrderConfirmationMail;
-use Illuminate\Support\Facades\Mail;
-use App\Models\Product;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Support\CheckoutValidation;
+use Illuminate\Support\Facades\Mail;
+use App\Services\Shipping\EcontDirectoryService;
+use App\Services\Shipping\ShippingCalculator;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
-use Stripe\PaymentIntent;
-use Stripe\Stripe;
-use App\Services\EcontLabelService;
-use App\Data\ShippingData;
-use Illuminate\Support\Facades\Log;
 
 class Checkout extends Component
 {
-    // === User input properties ===
     public $first_name = '';
     public $last_name = '';
     public $email = '';
     public $phone = '';
-    public $city = '';
-    public $zip = '';
-    public $street = '';
-    public $payment_method = 'card'; // Default is Stripe payment
-    public $shippingCost = 0;
-    public $totalWithShipping = 0;
+    public $payment_method = 'card';
+    public $terms_accepted = false;
 
-    // === Invoice fields ===
     public $invoiceRequested = false;
     public $companyName = '';
     public $companyID = '';
@@ -40,297 +28,349 @@ class Checkout extends Component
     public $companyTaxNumber = '';
     public $companyMol = '';
 
-    public bool $terms_accepted = false;
-
-    // === Cart items from session ===
     public $cartItems = [];
+    public float $shippingCost = 0;
+    public float $totalWithShipping = 0;
 
-    // === Stripe event listener ===
-    protected $listeners = ['stripeTokenReceived'];
+    # Econt shipping method: office / address
+    public string $shipping_method = 'address';
 
-    // Load cart items from session
+    # City
+    public string $citySearch = '';
+    public ?int $cityId = null;
+    public string $cityLabel = '';
+    public ?string $cityPostCode = null;
+    public array $cityOptions = [];
+
+    # Street
+    public string $streetSearch = '';
+    public ?int $streetId = null;
+    public ?int $streetCode = null;
+    public string $streetLabel = '';
+    public array $streetOptions = [];
+    public string $streetNum = '';
+
+    # Office
+    public string $officeSearch = '';
+    public ?string $officeCode = null;
+    public string $officeLabel = '';
+    public array $officeOptions = [];
+
     public function mount()
     {
         $this->cartItems = session('cart', []);
+        if (!$this->cartItems) {
+            return redirect()->to('/');
+        }
         $this->calculateLiveShipping();
     }
 
-
-
-    // Stripe token received from frontend
-    public function stripeTokenReceived($token = null)
+    private function dir(): EcontDirectoryService
     {
-        $this->pay($token);
+        return app(EcontDirectoryService::class);
     }
 
-    // Main checkout logic
-    public function pay($token = null)
+    # ===== OFFICE SEARCH =====
+    public function updatedOfficeSearch()
     {
-        DB::beginTransaction();
-
-        try {
-            // === Validate form input ===
-            $validator = Validator::make(
-                $this->only([
-                    'first_name',
-                    'last_name',
-                    'email',
-                    'phone',
-                    'city',
-                    'zip',
-                    'street',
-                    'companyName',
-                    'companyID',
-                    'companyAddress',
-                    'companyTaxNumber',
-                    'companyMol',
-                    'terms_accepted'
-                ]),
-                CheckoutValidation::rules($this->invoiceRequested),
-                CheckoutValidation::messages()
-            );
-
-            if ($validator->fails()) {
-                foreach ($validator->errors()->messages() as $field => $messages) {
-                    foreach ($messages as $message) {
-                        $this->addError($field, $message);
-                    }
-                }
-                $this->dispatch('$refresh');
-                return;
-            }
-
-            // === Get product info and subtotal ===
-            $products = Product::whereIn('id', array_keys($this->cartItems))->get();
-
-            $items = collect($products)->map(function ($product) {
-                $cartItem = $this->cartItems[$product->id] ?? ['quantity' => 1];
-                return [
-                    'id' => $product->id,
-                    'name' => $product->name,
-                    'price' => $product->price,
-                    'currency' => $product->currency,
-                    'quantity' => (int) $cartItem['quantity'],
-                    'weight' => (float) ($product->weight ?? 1.0),
-                ];
-            });
-
-            $subtotal = $items->sum(fn($item) => (float) $item['price'] * $item['quantity']);
-            $totalWeight = $items->sum(fn($item) => (float) $item['weight'] * (int) $item['quantity']);
-
-            // === Temporary order object used for Econt shipping calculation ===
-            $tempOrder = new ShippingData(
-                first_name: $this->first_name,
-                last_name: $this->last_name,
-                phone: $this->phone,
-                city: $this->city,
-                zip: $this->zip,
-                street: $this->street,
-                payment_method: $this->payment_method,
-                weight: $totalWeight
-            );
-
-
-            $shippingCost = EcontLabelService::calculateShipping($tempOrder);
-            if (is_null($shippingCost)) {
-                $this->addError('shipping', 'Shipping cost calculation failed.');
-                return;
-            }
-
-            $total = $subtotal + $shippingCost;
-
-            // === Save order to DB ===
-            $order = Order::create([
-                'first_name' => $this->first_name,
-                'last_name' => $this->last_name,
-                'email' => $this->email,
-                'phone' => $this->phone,
-                'city' => $this->city,
-                'zip' => $this->zip,
-                'street' => $this->street,
-                'payment_method' => $this->payment_method,
-                'total' => $total,
-                'weight' => $totalWeight,
-                'invoice' => $this->invoiceRequested ? [
-                    'company_name' => $this->companyName,
-                    'company_id' => $this->companyID,
-                    'company_address' => $this->companyAddress,
-                    'company_tax_number' => $this->companyTaxNumber,
-                    'company_mol' => $this->companyMol,
-                ] : null,
-                'terms_accepted' => $this->terms_accepted,
-                'terms_accepted_at' => now(),
-            ]);
-
-            foreach ($items as $item) {
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $item['id'],
-                    'name' => $item['name'],
-                    'price' => $item['price'],
-                    'currency' => $item['currency'],
-                    'quantity' => $item['quantity'],
-                ]);
-            }
-
-            if ($this->payment_method === 'card') {
-                if (!$token) {
-                    $this->addError('stripe', 'Invalid Stripe token.');
-                    return;
-                }
-
-                Stripe::setApiKey(config('services.stripe.secret'));
-
-                PaymentIntent::create([
-                    'amount' => $total * 100,
-                    'currency' => 'bgn',
-                    'payment_method' => $token,
-                    'confirm' => true,
-                    'description' => 'Order from ' . $this->first_name . ' ' . $this->last_name,
-                    'metadata' => [
-                        'email' => $this->email,
-                        'order_id' => $order->id
-                    ],
-                    'automatic_payment_methods' => [
-                        'enabled' => true,
-                        'allow_redirects' => 'never',
-                    ],
-                ]);
-            }
-
-            EcontLabelService::createLabel($order, $total);
-
-            DB::commit();
-
-            $this->dispatch('orderComplete');
-            session()->forget('cart');
-            session()->flash('success', 'Order was successfully placed!');
-            return redirect()->to('/thank-you');
-        } catch (\Throwable $e) {
-            DB::rollBack();
-
-            \Log::error('❌ Checkout error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            if (method_exists($e, 'getResponse') && $e->getResponse()) {
-                $response = json_decode($e->getResponse()?->getBody(), true);
-                \Log::error('📨 API response error', $response ?? []);
-            }
-
-            $this->addError('general', 'Something went wrong. Please try again.');
-            return null;
+        $q = trim($this->officeSearch);
+        if ($q === '' || ($this->officeCode && $q === $this->officeLabel)) {
+            $this->officeOptions = [];
+            return;
         }
+
+        $this->officeOptions = array_values(
+            $this->dir()->searchOffices($q, 200)->toArray()
+        );
+    }
+
+    public function selectOffice($code, $label)
+    {
+        $this->officeCode = $code;
+        $this->officeLabel = $label;
+        $this->officeSearch = $label;
+        $this->officeOptions = [];
+        $this->calculateLiveShipping();
+    }
+
+    # ===== CITY SEARCH =====
+    public function updatedCitySearch()
+    {
+        $q = trim($this->citySearch);
+        if ($q === '' || ($this->cityId && $q === $this->cityLabel)) {
+            $this->cityOptions = [];
+            return;
+        }
+
+        $this->cityOptions = array_values(
+            $this->dir()->searchCities($q, 50)->map(fn($c) => [
+                'id' => $c['id'],
+                'label' => $c['label'],
+                'post_code' => $c['post_code'] ?? null,
+            ])->toArray()
+        );
+    }
+
+    public function selectCity($id, $label, $postCode = null)
+    {
+        $this->cityId = $id;
+        $this->cityLabel = $label;
+        $this->cityPostCode = $postCode;
+        $this->citySearch = $label;
+        $this->cityOptions = [];
+        $this->calculateLiveShipping();
+    }
+
+    # ===== STREET SEARCH =====
+    public function updatedStreetSearch()
+    {
+        if (!$this->cityId) return;
+
+        $q = trim($this->streetSearch);
+        if ($q === '' || ($this->streetId && $q === $this->streetLabel)) {
+            $this->streetOptions = [];
+            return;
+        }
+
+        $this->streetOptions = array_values(
+            $this->dir()->streetsByCity($this->cityId, $q, 100)->toArray()
+        );
+    }
+
+    public function selectStreet($id, $code, $label)
+    {
+        $this->streetId = $id;
+        $this->streetCode = $code;
+        $this->streetLabel = $label;
+        $this->streetSearch = $label;
+        $this->streetOptions = [];
+        $this->calculateLiveShipping();
+    }
+
+    public function updatedStreetNum()
+    {
+        $this->calculateLiveShipping();
+    }
+
+    public function submitOrder()
+    {
+        \Log::debug('Checkout: submitOrder triggered', $this->only([
+            'first_name',
+            'last_name',
+            'email',
+            'phone',
+            'shipping_method'
+        ]));
+
+        $validator = Validator::make(
+            $this->only([
+                'first_name',
+                'last_name',
+                'email',
+                'phone',
+                'terms_accepted',
+                'shipping_method',
+                'cityId',
+                'streetCode',
+                'streetNum',
+                'officeCode'
+            ]),
+            CheckoutValidation::rules($this->shipping_method, $this->invoiceRequested),
+            CheckoutValidation::messages()
+        );
+
+
+        if ($validator->fails()) {
+            \Log::warning('Checkout: validation failed', $validator->errors()->toArray());
+
+            foreach ($validator->errors()->messages() as $field => $messages) {
+                foreach ($messages as $message) $this->addError($field, $message);
+            }
+            return;
+        }
+
+        \Log::info('Checkout: validation passed, creating order');
+
+        return $this->createOrder();
     }
 
 
-    public function updated($property)
+    private function calcWeight()
     {
-        \Log::debug("🟡 Property updated: $property");
-
-        if (in_array($property, ['city', 'zip', 'street', 'payment_method'])) {
-            \Log::debug("🔵 Triggering shipping calculation for: $property");
-            $this->calculateLiveShipping();
-            $this->dispatch('$refresh');
-        }
+        return collect($this->cartItems)->sum(fn($i) => ($i['weight'] ?? 0.5) * $i['quantity']);
     }
 
     public function calculateLiveShipping()
     {
-        \Log::debug("🟢 Calculating shipping for:", [
-            'city' => $this->city,
-            'zip' => $this->zip,
-            'street' => $this->street,
+        if (!$this->first_name || !$this->phone) return;
+
+        $weight = max(0.3, $this->calcWeight());
+        $calc = app(ShippingCalculator::class);
+
+        try {
+            $this->shippingCost = $calc->calculate([
+                'sender' => [
+                    'name' => config('shipping.econt.sender_name'),
+                    'phone' => config('shipping.econt.sender_phone'),
+                    'city_name' => config('shipping.econt.sender_city'),
+                    'post_code' => config('shipping.econt.sender_post'),
+                    'street' => config('shipping.econt.sender_street'),
+                    'num' => config('shipping.econt.sender_num'),
+                ],
+                'receiver' => [
+                    'name' => $this->first_name . ' ' . $this->last_name,
+                    'phone' => preg_replace('/\s+/', '', $this->phone),
+                    'city_id' => $this->shipping_method === 'address' ? $this->cityId : null,
+                    'office_code' => $this->shipping_method === 'econt_office' ? $this->officeCode : null,
+                    'street_label' => $this->streetLabel,
+                    'street_num' => $this->streetNum,
+                ],
+                'pack_count' => 1,
+                'weight' => $weight,
+                'description' => 'Хранителни добавки',
+            ]);
+        } catch (\Throwable $e) {
+            $this->shippingCost = 0;
+        }
+
+        $subtotal = collect($this->cartItems)->sum(fn($i) => $i['price'] * $i['quantity']);
+        $this->totalWithShipping = $subtotal + $this->shippingCost;
+    }
+
+    private function createOrder()
+    {
+        \Log::info('Checkout: createOrder() hit', [
             'payment_method' => $this->payment_method,
         ]);
 
+        return DB::transaction(function () {
 
-        if (strlen($this->city) > 1 && strlen($this->zip) > 1 && strlen($this->street) > 3) {
-            $products = Product::whereIn('id', array_keys($this->cartItems))->get();
+            $items    = collect($this->cartItems);
+            $subtotal = $items->sum(fn($i) => $i['price'] * $i['quantity']);
+            $weight   = $this->calcWeight();
+            $total    = $subtotal + $this->shippingCost;
 
-            $items = $products->map(function ($product) {
-                $cartItem = $this->cartItems[$product->id] ?? ['quantity' => 1];
-                return [
-                    'weight' => (float) ($product->weight ?? 1.0),
-                    'quantity' => (int) $cartItem['quantity'],
-                ];
-            });
+            $order = Order::create([
+                'first_name' => $this->first_name,
+                'last_name'  => $this->last_name,
+                'email'      => $this->email,
+                'phone'      => $this->phone,
+                'payment_method' => $this->payment_method,
+                'total'      => $total,
+                'weight'     => $weight,
 
-            $totalWeight = $items->sum(fn($item) => (float) $item['weight'] * (int) $item['quantity']);
+                // SHIPPING
+                'city'           => $this->cityLabel,
+                'zip'            => $this->cityPostCode,
+                'street'         => $this->streetLabel,
+                'street_num'     => $this->streetNum,
+                'office_code'    => $this->officeCode,
+                'shipping_method' => $this->shipping_method,
 
-            Log::debug('📦 Calculated totalWeight:', [
-                'items' => $items,
-                'totalWeight' => $totalWeight,
+                // INVOICE
+                'invoice' => $this->invoiceRequested ? [
+                    'company_name'     => $this->companyName,
+                    'company_id'       => $this->companyID,
+                    'company_address'  => $this->companyAddress,
+                    'company_tax_number' => $this->companyTaxNumber,
+                    'company_mol'      => $this->companyMol,
+                ] : null,
+
+                'terms_accepted'     => $this->terms_accepted,
+                'terms_accepted_at'  => now(),
+                'status'             => 'pending'
             ]);
 
+            foreach ($items as $item) {
+                OrderItem::create([
+                    'order_id'       => $order->id,
+                    'product_id'     => $item['id'],
+                    'product_source' => $item['source'] ?? null,
+                    'product_slug'   => $item['slug'] ?? null,
+                    'product_image'  => $item['image'] ?? null,
+                    'name'           => $item['name'],
+                    'price'          => $item['price'],
+                    'quantity'       => $item['quantity'],
+                    'currency'       => $item['currency'] ?? 'лв.',
+                ]);
+            }
 
+            session()->put('checkout_order_id', $order->id);
 
-            $tempOrder = new ShippingData(
-                first_name: $this->first_name,
-                last_name: $this->last_name,
-                phone: $this->phone,
-                city: $this->city,
-                zip: $this->zip,
-                street: $this->street,
-                payment_method: $this->payment_method,
-                weight: $totalWeight
-            );
+            /**
+             * COD FLOW — generate label immediately
+             */
+            if ($this->payment_method === 'cod') {
 
-            Log::debug('📬 ShippingData DTO created', (array) $tempOrder);
+                try {
+                    $labelService = app(\App\Services\Shipping\EcontLabelService::class);
 
-            Log::debug('🧮 Product weights and quantities', [
-                'cart' => $this->cartItems,
-                'products' => $items,
-            ]);
+                    $label = $labelService->validateThenCreate([
+                        'sender' => [
+                            'name'      => config('shipping.econt.sender_name'),
+                            'phone'     => config('shipping.econt.sender_phone'),
+                            'city_name' => config('shipping.econt.sender_city'),
+                            'post_code' => config('shipping.econt.sender_post'),
+                            'street'    => config('shipping.econt.sender_street'),
+                            'num'       => config('shipping.econt.sender_num'),
+                        ],
+                        'receiver' => [
+                            'name'        => $order->first_name . ' ' . $order->last_name,
+                            'phone'       => preg_replace('/\s+/', '', $order->phone),
+                            'city_id'     => $this->shipping_method === 'address' ? $this->cityId : null,
+                            'office_code' => $this->shipping_method === 'econt_office' ? $this->officeCode : null,
+                            'street_label' => $this->streetLabel ?: null,
+                            'street_num'  => $this->streetNum ?: null,
+                        ],
+                        'pack_count'  => 1,
+                        'weight'      => $weight,
+                        'description' => 'Хранителни добавки',
+                        'cod' => [
+                            'amount'   => $order->total,
+                            'type'     => 'get',
+                            'currency' => 'BGN',
+                        ],
+                    ]);
 
-            $cost = EcontLabelService::calculateShipping($tempOrder);
-            \Log::debug("🧾 Shipping cost returned:", ['cost' => $cost]);
+                    $order->update([
+                        'status'            => 'paid',
+                        'payment_status'    => 'paid',
+                        'paid_at'           => now(),
+                        'shipping_provider' => 'econt',
+                        'shipping_payload'  => $label,
+                    ]);
 
-            $this->shippingCost = $cost ?? 0;
-        } else {
-            \Log::warning("❗ Not enough address data to calculate shipping", [
-                'city' => $this->city,
-                'zip' => $this->zip,
-                'street' => $this->street,
-            ]);
-        }
+                    Mail::to($order->email)->send(new \App\Mail\OrderPlacedCustomerMail($order));
+                    Mail::to(config('mail.admin_address'))->send(new \App\Mail\OrderPlacedAdminMail($order));
+                } catch (\Throwable $e) {
+                    \Log::error('COD Econt error: ' . $e->getMessage());
+                }
 
-        $subtotal = collect($this->cartItems)->reduce(function ($carry, $item) {
-            $product = Product::find($item['id']);
-            return $carry + ($product->price * $item['quantity']);
-        }, 0);
+                session()->forget('cart');
 
-        \Log::debug("💰 Subtotal: $subtotal, Shipping: {$this->shippingCost}");
+                return redirect()->route('thank-you');
+            }
 
-        $this->totalWithShipping = $subtotal + $this->shippingCost;
-        \Log::debug("✅ Total with shipping: {$this->totalWithShipping}");
+            /**
+             * STRIPE FLOW
+             */
+            if ($this->payment_method === 'card') {
+                \Log::info('Checkout: redirecting to Stripe', ['order_id' => $order->id]);
+                return redirect()->route('stripe.create', ['order' => $order->id]);
+            }
+
+            // fallback
+            session()->forget('cart');
+            return redirect()->route('thank-you');
+        });
     }
 
 
 
-    // === Render the checkout page view ===
     public function render()
     {
-        $products = Product::whereIn('id', array_keys($this->cartItems))->get();
-
-        $items = $products->map(function ($product) {
-            $cartItem = $this->cartItems[$product->id] ?? ['quantity' => 1];
-            return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'price' => $product->price,
-                'currency' => $product->currency?->symbol ?? 'лв.',
-                'quantity' => (int) $cartItem['quantity'],
-                'image' => $product->image,
-                'slug' => $product->slug,
-            ];
-        });
-
-        $total = $items->sum(fn($item) => $item['price'] * $item['quantity']);
-
         return view('livewire.pages.checkout', [
-            'items' => $items,
-            'total' => $total,
+            'items' => collect($this->cartItems)
         ])->layout('layouts.app');
     }
 }

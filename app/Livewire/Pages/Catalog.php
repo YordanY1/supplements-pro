@@ -2,18 +2,13 @@
 
 namespace App\Livewire\Pages;
 
-use App\Models\Product;
-use App\Models\Category;
-use App\Models\Brand;
-use Livewire\Attributes\Url;
 use Livewire\Component;
-use Livewire\WithPagination;
-
+use Livewire\Attributes\Url;
+use App\Services\SupplementsAggregatorService;
+use Illuminate\Support\Str;
 
 class Catalog extends Component
 {
-    use WithPagination;
-
     #[Url(as: 'category', history: true)]
     public string $category = '';
 
@@ -26,91 +21,132 @@ class Catalog extends Component
     #[Url]
     public int $perPage = 12;
 
-    protected $listeners = ['filtersUpdated' => 'updateFilters'];
+    #[Url]
+    public int $page = 1;
 
-    public function updateFilters($data)
+    public array $allProducts = [];
+    public array $categories = [];
+    public array $brands = [];
+
+    public function mount(SupplementsAggregatorService $supplements)
     {
-        $this->resetPage();
+        $products = collect($supplements->getProducts())
+            ->filter(fn($p) => $p['title'])
+            ->values();
 
-        $this->category = $data['category'] ?? '';
-        $this->brand = $data['brand'] ?? '';
-        $this->sort = $data['sort'] ?? 'default';
-        $this->perPage = $data['perPage'] ?? 12;
+        $this->allProducts = $products->toArray();
+
+        $this->categories = $supplements->getCategories();
+        $this->brands = $supplements->getBrands();
     }
 
-    public function addToCart(int $productId)
+    public function toggleCategory($slug)
     {
-        $product = Product::with('currency')->findOrFail($productId);
+        $selected = explode(',', $this->category);
 
+        if (in_array($slug, $selected)) {
+            $selected = array_diff($selected, [$slug]);
+        } else {
+            $selected[] = $slug;
+        }
+
+        $this->category = implode(',', array_filter($selected));
+        $this->page = 1;
+    }
+
+    public function toggleBrand($slug)
+    {
+        $selected = explode(',', $this->brand);
+
+        if (in_array($slug, $selected)) {
+            $selected = array_diff($selected, [$slug]);
+        } else {
+            $selected[] = $slug;
+        }
+
+        $this->brand = implode(',', array_filter($selected));
+        $this->page = 1;
+    }
+
+    public function updatedSort()
+    {
+        $this->page = 1;
+    }
+    public function updatedPerPage()
+    {
+        $this->page = 1;
+    }
+
+    public function getFilteredProducts()
+    {
+        $products = collect($this->allProducts);
+
+        if ($this->category) {
+            $categories = explode(',', $this->category);
+            $products = $products->filter(
+                fn($p) =>
+                in_array(Str::slug($p['category'] ?? ''), $categories)
+            );
+        }
+
+        if ($this->brand) {
+            $brands = explode(',', $this->brand);
+            $products = $products->filter(
+                fn($p) =>
+                in_array(Str::slug($p['brand_name'] ?? ''), $brands)
+            );
+        }
+
+        return match ($this->sort) {
+            'price_asc' => $products->sortBy('price')->values(),
+            'price_desc' => $products->sortByDesc('price')->values(),
+            default => $products->values(),
+        };
+    }
+
+    public function addToCart($productId)
+    {
         $cart = session()->get('cart', []);
+
+        $product = collect($this->allProducts)->firstWhere('id', $productId);
+
+        if (!$product) return;
 
         if (isset($cart[$productId])) {
             $cart[$productId]['quantity']++;
         } else {
             $cart[$productId] = [
-                'id' => $product->id,
-                'name' => $product->name,
-                'price' => $product->price,
-                'currency' => $product->currency->symbol ?? 'лв.',
+                'id'       => $product['id'],
+                'name'     => $product['title'],
+                'price'    => $product['price'],
+                'currency' => $product['currency_symbol'] ?? 'лв.',
                 'quantity' => 1,
-                'image' => $product->image,
-                'slug' => $product->slug,
-                'weight' => $product->weight,
+                'image'    => $product['image'],
+                'slug'     => $product['slug'] ?? null,
+                'weight'   => $product['weight'] ?? null,
             ];
         }
 
         session()->put('cart', $cart);
-
         $this->dispatch('cart-updated');
     }
 
 
     public function render()
     {
-        $query = Product::query()->with('brand', 'category');
+        $products = $this->getFilteredProducts();
 
-        $categorySlugs = $this->category ? explode(',', $this->category) : [];
-        $brandSlugs = $this->brand ? explode(',', $this->brand) : [];
-
-        $categoryNames = [];
-        $brandNames = [];
-
-        if (!empty($categorySlugs)) {
-            $categoryIds = Category::whereIn('slug', $categorySlugs)->pluck('id');
-            $categoryNames = Category::whereIn('slug', $categorySlugs)->pluck('name')->toArray();
-            $query->whereIn('category_id', $categoryIds);
-        }
-
-        if (!empty($brandSlugs)) {
-            $brandIds = Brand::whereIn('slug', $brandSlugs)->pluck('id');
-            $brandNames = Brand::whereIn('slug', $brandSlugs)->pluck('name')->toArray();
-            $query->whereIn('brand_id', $brandIds);
-        }
-
-
-        $titleParts = [];
-
-        if ($categoryNames) {
-            $titleParts[] = implode(', ', $categoryNames);
-        }
-
-        if ($brandNames) {
-            $titleParts[] = implode(', ', $brandNames);
-        }
-
-        $title = $titleParts
-            ? 'Филтрирани продукти: ' . implode(' + ', $titleParts)
-            : 'Всички продукти';
-
-        if ($this->sort === 'price_asc') {
-            $query->orderBy('price');
-        } elseif ($this->sort === 'price_desc') {
-            $query->orderByDesc('price');
-        }
+        $paginated = $products
+            ->forPage($this->page, $this->perPage)
+            ->values()
+            ->toArray();
 
         return view('livewire.pages.catalog', [
-            'products' => $query->paginate($this->perPage),
-            'title' => $title,
+            'products' => $paginated,
+            'total' => $products->count(),
+            'page' => $this->page,
+            'perPage' => $this->perPage,
+            'title' => $this->category || $this->brand ? 'Филтрирани продукти' : 'Всички продукти',
         ])->layout('layouts.app');
     }
 }

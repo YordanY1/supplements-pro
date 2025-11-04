@@ -9,18 +9,12 @@
 @import '@fortawesome/fontawesome-free/css/all.min.css';
 
 @theme {
-    --color-primary: #0f0f0f;
-    --color-card: #1a1a1a;
-    --color-text: #ffffff;
-    --color-accent: #10b981;
-    /* emerald-500 */
-    --color-accent-2: #34d399;
-    /* emerald-400 */
-    --color-cta: #22c55e;
-    /* emerald-600 */
-
-    --font-primary: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --color-primary: #96DD7E;
+    --color-secondary: #BAE0AE;
+    --color-accent: #DFB744;
+    --color-text: #333333;
+    --color-bg: #FFFFFF;
+    --font-primary: 'Poppins', ui-sans-serif, system-ui, sans-serif;
 }
 
 @keyframes fade-in {
@@ -47,47 +41,63 @@
     }
 }
 
-
 @utilities {
     .text-primary {
         color: var(--color-primary);
     }
 
-    .text-text {
-        color: var(--color-text);
-    }
-
-
-    .bg-primary {
-        background-color: var(--color-primary);
-    }
-
-    .hover\:bg-primary:hover {
-        background-color: var(--color-primary);
-    }
-
-    .bg-primary-light {
-        background-color: var(--color-primary-light);
+    .text-secondary {
+        color: var(--color-secondary);
     }
 
     .text-accent {
         color: var(--color-accent);
     }
 
-    .hover\:text-hover:hover {
-        color: var(--color-hover);
+    .text-dark {
+        color: var(--color-text);
     }
 
-    .bg-gradient-gold {
-        background-image: linear-gradient(to right, var(--color-gold-gradient-start), var(--color-gold-gradient-end));
+    .bg-primary {
+        background-color: var(--color-primary);
     }
 
-    .font-primary {
-        font-family: var(--font-primary);
+    .bg-secondary {
+        background-color: var(--color-secondary);
+    }
+
+    .bg-accent {
+        background-color: var(--color-accent);
+    }
+
+    .bg-light {
+        background-color: var(--color-bg);
+    }
+
+    .btn-primary {
+        background-color: var(--color-accent);
+        color: var(--color-text);
+        font-weight: 600;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--color-primary);
+        color: #fff;
+        transform: translateY(-1px);
     }
 
     .animate-scale-fade-in {
         animation: scale-fade-in 0.3s ease-out both;
     }
 
+    .font-primary {
+        font-family: var(--font-primary);
+    }
+}
+
+.form-input {
+    @apply w-full rounded-xl border border-gray-200 bg-white/70 backdrop-blur-lg py-3 px-4 text-gray-900 placeholder-gray-400 shadow-sm focus:ring-2 focus:ring-primary/70 focus:border-primary transition-all duration-200 hover:border-gray-300;
 }

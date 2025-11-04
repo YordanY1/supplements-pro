@@ -1,315 +1,230 @@
-<div class="max-w-xl mx-auto px-4 py-10 font-primary text-[var(--color-text)] bg-[var(--color-card)]">
-    <h1 class="text-3xl font-bold text-[var(--color-accent)] mb-8 text-center">Детайли за поръчката</h1>
+<div class="max-w-6xl mx-auto px-4 py-12 bg-gray-50 min-h-screen">
 
-    <div class="max-w-4xl mx-auto px-4 py-10 font-primary">
-        <h1 class="text-3xl font-bold text-[var(--color-accent)] mb-10 text-center">Вашите данни</h1>
+    <h1 class="text-3xl font-extrabold text-center text-gray-900 tracking-tight mb-10">
+        Финализиране на поръчката
+    </h1>
 
-        <div class="bg-[var(--color-card)] rounded-xl shadow-lg p-6 space-y-8">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="grid lg:grid-cols-2 gap-10">
 
-                <div>
-                    <label for="first_name" class="block text-sm font-medium text-[var(--color-text)] mb-1">Име*</label>
-                    <input type="text" id="first_name" wire:model.defer="first_name"
-                        class="w-full bg-transparent border border-gray-600 text-white rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent">
+        {{-- LEFT — USER INFO --}}
+        <div class="bg-white/90 backdrop-blur-xl p-8 rounded-2xl shadow-xl space-y-8 border border-gray-100">
+
+            <h2 class="text-xl font-bold text-gray-900">Вашите данни</h2>
+
+            {{-- PERSONAL INFO --}}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div class="space-y-1">
+                    <label class="text-sm font-medium text-gray-700">Име *</label>
+                    <input type="text" wire:model.defer="first_name" class="form-input" placeholder="Иван">
                     @error('first_name')
-                        <span class="text-sm text-red-500">{{ $message }}</span>
+                        <p class="text-red-500 text-xs">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <div>
-                    <label for="last_name"
-                        class="block text-sm font-medium text-[var(--color-text)] mb-1">Фамилия*</label>
-                    <input type="text" id="last_name" wire:model.defer="last_name"
-                        class="w-full bg-transparent border border-gray-600 text-white rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent">
+                <div class="space-y-1">
+                    <label class="text-sm font-medium text-gray-700">Фамилия *</label>
+                    <input type="text" wire:model.defer="last_name" class="form-input" placeholder="Иванов">
                     @error('last_name')
-                        <span class="text-sm text-red-500">{{ $message }}</span>
+                        <p class="text-red-500 text-xs">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <div>
-                    <label for="email" class="block text-sm font-medium text-[var(--color-text)] mb-1">Имейл*</label>
-                    <input type="email" id="email" wire:model.defer="email"
-                        class="w-full bg-transparent border border-gray-600 text-white rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent">
+                <div class="space-y-1">
+                    <label class="text-sm font-medium text-gray-700">Имейл *</label>
+                    <input type="email" wire:model.defer="email" class="form-input" placeholder="email@domain.com">
                     @error('email')
-                        <span class="text-sm text-red-500">{{ $message }}</span>
+                        <p class="text-red-500 text-xs">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <div>
-                    <label for="phone" class="block text-sm font-medium text-[var(--color-text)] mb-1">Телефонен
-                        номер*</label>
-                    <input type="text" id="phone" wire:model="phone" wire:blur="$refresh"
-                        class="w-full bg-transparent border border-gray-600 text-white rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent">
+                <div class="space-y-1">
+                    <label class="text-sm font-medium text-gray-700">Телефон *</label>
+                    <input type="text" wire:model.defer="phone" class="form-input" placeholder="0888 123 456">
                     @error('phone')
-                        <span class="text-sm text-red-500">{{ $message }}</span>
-                    @enderror
-                </div>
-
-                <div>
-                    <label for="city"
-                        class="block text-sm font-medium text-[var(--color-text)] mb-1">Град/Село*</label>
-                    <input type="text" id="city" wire:model="city" wire:blur="$refresh"
-                        class="w-full bg-transparent border border-gray-600 text-white rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent">
-                    @error('city')
-                        <span class="text-sm text-red-500">{{ $message }}</span>
-                    @enderror
-                </div>
-
-                <div>
-                    <label for="zip" class="block text-sm font-medium text-[var(--color-text)] mb-1">Пощенски
-                        код*</label>
-                    <input type="text" id="zip" wire:model="zip" wire:blur="$refresh"
-                        class="w-full bg-transparent border border-gray-600 text-white rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent">
-                    @error('zip')
-                        <span class="text-sm text-red-500">{{ $message }}</span>
-                    @enderror
-                </div>
-
-                <div class="md:col-span-2">
-                    <label for="street" class="block text-sm font-medium text-[var(--color-text)] mb-1">Улица*</label>
-                    <input type="text" id="street" wire:model="street" wire:blur="$refresh"
-                        class="w-full bg-transparent border border-gray-600 text-white rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent">
-                    @error('street')
-                        <span class="text-sm text-red-500">{{ $message }}</span>
+                        <p class="text-red-500 text-xs">{{ $message }}</p>
                     @enderror
                 </div>
             </div>
 
-            <div class="mt-6">
-                <label class="inline-flex items-center">
-                    <input type="checkbox" wire:model="invoiceRequested" class="text-[var(--color-accent)]">
-                    <span class="ml-2 text-sm text-[var(--color-text)]">Желая фактура</span>
+            {{-- SHIPPING METHOD --}}
+            <div class="space-y-2 pt-2">
+                <p class="text-sm font-semibold text-gray-700">Метод на доставка</p>
+
+                <label class="flex items-center gap-2 cursor-pointer text-sm">
+                    <input type="radio" wire:model.live="shipping_method" value="econt_office" class="text-primary">
+                    <span>До офис на Еконт</span>
+                </label>
+
+                <label class="flex items-center gap-2 cursor-pointer text-sm">
+                    <input type="radio" wire:model.live="shipping_method" value="address" class="text-primary">
+                    <span>До адрес</span>
                 </label>
             </div>
 
-            <div x-data="{ showInvoice: @entangle('invoiceRequested') }" x-show="showInvoice" x-cloak class="mt-6 space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-[var(--color-text)] mb-1">Име на фирмата</label>
-                    <input type="text" wire:model.defer="companyName"
-                        class="w-full bg-transparent border border-gray-600 text-white rounded-md px-4 py-2" />
-                    @error('companyName')
-                        <span class="text-sm text-red-500">{{ $message }}</span>
-                    @enderror
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-[var(--color-text)] mb-1">ЕИК/Булстат</label>
-                    <input type="text" wire:model.defer="companyID"
-                        class="w-full bg-transparent border border-gray-600 text-white rounded-md px-4 py-2" />
-                    @error('companyID')
-                        <span class="text-sm text-red-500">{{ $message }}</span>
-                    @enderror
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-[var(--color-text)] mb-1">Адрес на фирмата</label>
-                    <input type="text" wire:model.defer="companyAddress"
-                        class="w-full bg-transparent border border-gray-600 text-white rounded-md px-4 py-2" />
-                    @error('companyAddress')
-                        <span class="text-sm text-red-500">{{ $message }}</span>
-                    @enderror
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-[var(--color-text)] mb-1">ДДС Номер</label>
-                    <input type="text" wire:model.defer="companyTaxNumber"
-                        class="w-full bg-transparent border border-gray-600 text-white rounded-md px-4 py-2" />
-                    @error('companyTaxNumber')
-                        <span class="text-sm text-red-500">{{ $message }}</span>
-                    @enderror
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-[var(--color-text)] mb-1">МОЛ</label>
-                    <input type="text" wire:model.defer="companyMol"
-                        class="w-full bg-transparent border border-gray-600 text-white rounded-md px-4 py-2" />
-                    @error('companyMol')
-                        <span class="text-sm text-red-500">{{ $message }}</span>
-                    @enderror
-                </div>
-            </div>
+            @php
+                $cityOptions = $cityOptions ?? [];
+                $streetOptions = $streetOptions ?? [];
+                $officeOptions = $officeOptions ?? [];
+            @endphp
 
-        </div>
-    </div>
+            {{-- ADDRESS MODE --}}
+            @if ($shipping_method === 'address')
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-2">
 
-    <div class="mb-6 space-y-2">
-        <p class="text-sm font-medium text-gray-700">Метод на плащане</p>
+                    {{-- City --}}
+                    <div class="space-y-1" x-data>
+                        <label class="text-sm font-medium text-gray-700">Град *</label>
+                        <input type="text" wire:model.live.debounce.300ms="citySearch" class="form-input"
+                            placeholder="Започни да пишеш..." autocomplete="off">
 
-        <label class="flex items-center gap-2">
-            <input type="radio" value="card" wire:model="payment_method" class="text-primary" />
-            <span>Плащане с карта (Stripe)</span>
-        </label>
+                        @error('cityId')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
 
-        <label class="flex items-center gap-2">
-            <input type="radio" value="cod" wire:model="payment_method" class="text-primary" />
-            <span>Плащане при получаване</span>
-        </label>
-    </div>
-
-    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md text-sm mb-4" role="alert"
-        x-show="$wire.payment_method" x-transition>
-        <template x-if="$wire.payment_method === 'card'">
-            <p>
-                <strong>ВАЖНО:</strong> При заплащане с карта, Вие заплащате само стойността на поръчката без разходите
-                за доставка. Разходите за доставка ще бъдат начислени допълнително и ще трябва да ги заплатите на
-                куриера при получаване на пратката.
-            </p>
-        </template>
-        <template x-if="$wire.payment_method === 'cod'">
-            <p>
-                <strong>ВАЖНО:</strong> При заплащане при доставка с наложен платеж, Вие заплащате както стойността на
-                поръчката, така и разходите за доставка директно на куриера при получаване на пратката.
-            </p>
-        </template>
-    </div>
-
-    <div wire:ignore id="stripe-container" data-publishable-key="{{ config('services.stripe.key') }}"
-        x-data="{
-            stripe: null,
-            card: null,
-            loading: false,
-
-            async pay() {
-                this.loading = true;
-
-                const { paymentMethod, error } = await this.stripe.createPaymentMethod({
-                    type: 'card',
-                    card: this.card,
-                });
-
-                if (error) {
-                    document.getElementById('card-errors').textContent = error.message;
-                    this.loading = false;
-                } else {
-                    window.dispatchEvent(new CustomEvent('stripeTokenReceived', {
-                        detail: [paymentMethod.id]
-                    }));
-                }
-            },
-
-            async init() {
-                const key = $el.dataset.publishableKey;
-
-                this.stripe = await window.loadStripe(key);
-                const elements = this.stripe.elements();
-                this.card = elements.create('card', { hidePostalCode: true });
-                this.card.mount('#card-element');
-
-                this.card.on('change', function(event) {
-                    const displayError = document.getElementById('card-errors');
-                    displayError.textContent = event.error ? event.error.message : '';
-                });
-
-                window.addEventListener('orderComplete', () => {
-                    this.loading = false;
-                });
-            }
-        }" x-init="init()">
-
-
-        <ul class="space-y-4">
-            @foreach ($items as $item)
-                <li class="flex items-center gap-4">
-                    <img src="{{ asset(isset($item['image']) && file_exists(public_path('storage/' . $item['image'])) ? 'storage/' . $item['image'] : 'images/products/default.jpg') }}"
-                        alt="{{ $item['name'] }}" class="w-10 h-10 object-contain" />
-
-                    <div class="flex-1">
-                        <p class="text-base font-medium text-white">{{ $item['name'] }}</p>
-                        <p class="text-sm text-gray-300">Количество: {{ $item['quantity'] }}</p>
+                        @if (!empty($cityOptions))
+                            <ul class="bg-white border shadow rounded mt-1 max-h-48 overflow-auto relative z-50"
+                                x-on:click.outside="$wire.set('cityOptions', [])">
+                                @foreach ($cityOptions as $opt)
+                                    <li class="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                                        wire:click="selectCity({{ $opt['id'] }}, '{{ $opt['label'] }}', '{{ $opt['post_code'] ?? '' }}')">
+                                        {{ $opt['label'] }}
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @endif
                     </div>
-                    <div class="text-sm font-semibold text-[var(--color-accent)] whitespace-nowrap">
-                        {{ number_format($item['price'] * $item['quantity'], 2) }} {{ $item['currency'] }}
+
+                    {{-- Street --}}
+                    <div class="space-y-1" x-data>
+                        <label class="text-sm font-medium text-gray-700">Улица *</label>
+                        <input type="text" wire:model.live.debounce.300ms="streetSearch" class="form-input"
+                            placeholder="ул. Иван Вазов" autocomplete="off">
+
+                        @error('streetCode')
+                            <p class="text-red-500 text-xs">{{ $message }}</p>
+                        @enderror
+
+                        @if (!empty($streetOptions))
+                            <ul class="bg-white border shadow rounded mt-1 max-h-48 overflow-auto relative z-50"
+                                x-on:click.outside="$wire.set('streetOptions', [])">
+                                @foreach ($streetOptions as $opt)
+                                    <li class="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                                        wire:click="selectStreet({{ $opt['id'] }}, {{ $opt['value'] }}, '{{ $opt['label'] }}')">
+                                        {{ $opt['label'] }}
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @endif
                     </div>
-                </li>
-            @endforeach
-        </ul>
 
-        <div x-data="{
-            shipping: @entangle('shippingCost'),
-            total: @entangle('totalWithShipping'),
-            animateValue(el, value) {
-                el.classList.add('opacity-0', 'scale-95');
-                setTimeout(() => {
-                    el.textContent = Number(value).toLocaleString('bg-BG', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-                    el.classList.remove('opacity-0', 'scale-95');
-                    el.classList.add('opacity-100', 'scale-100');
-                }, 100);
-            }
-        }" x-init="$watch('shipping', value => animateValue($refs.shipping, value));
-        $watch('total', value => animateValue($refs.total, value));"
-            class="flex justify-between text-lg font-semibold text-white border-t border-gray-600 pt-4 space-x-4">
-            <div>
-                Доставка:
-                <span x-ref="shipping"
-                    class="inline-block transition-all duration-300 ease-out opacity-100 scale-100">
-                    {{ number_format($shippingCost, 2) }}
-                </span> лв.
-            </div>
-            <div class="font-semibold">
-                Обща сума с доставка:
-                <span x-ref="total" class="inline-block transition-all duration-300 ease-out opacity-100 scale-100">
-                    {{ number_format($totalWithShipping, 2) }}
-                </span> лв.
-            </div>
-        </div>
+                    {{-- Street Num --}}
+                    <div class="space-y-1">
+                        <label class="text-sm font-medium text-gray-700">Номер *</label>
+                        <input type="text" wire:model.live="streetNum" class="form-input" placeholder="№">
+                    </div>
+                </div>
+            @endif
+
+            {{-- OFFICE MODE --}}
+            @if ($shipping_method === 'econt_office')
+                <div class="mt-2 space-y-1" x-data>
+                    <label class="text-sm font-medium text-gray-700">Офис на Еконт *</label>
+                    <input type="text" wire:model.live.debounce.300ms="officeSearch" class="form-input"
+                        placeholder="Търси офис..." autocomplete="off">
+
+                    @error('officeCode')
+                        <p class="text-red-500 text-xs">{{ $message }}</p>
+                    @enderror
+
+                    @if (!empty($officeOptions))
+                        <ul class="bg-white border shadow rounded mt-1 max-h-64 overflow-auto relative z-50"
+                            x-on:click.outside="$wire.set('officeOptions', [])">
+                            @foreach ($officeOptions as $opt)
+                                <li class="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                                    wire:click="selectOffice('{{ $opt['value'] }}', '{{ $opt['label'] }}')">
+                                    {{ $opt['label'] }}
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
+            @endif
 
 
-        <div class="flex items-start gap-2 mt-6">
-            <input type="checkbox" wire:model="terms_accepted" id="terms_accepted"
-                class="mt-1 text-[var(--color-accent)] bg-transparent border-gray-600 rounded shadow-sm focus:ring-[var(--color-accent)]" />
-            <label for="terms_accepted" class="text-sm text-[var(--color-text)] leading-relaxed">
-                Съгласен съм с <a href="{{ route('terms-and-conditions.index') }}" wire:navigate target="_blank"
-                    class="text-[var(--color-accent-2)] underline">
-                    Общите условия за ползване
-                </a>
+            {{-- INVOICE --}}
+            <label class="flex items-center gap-2 text-sm font-medium cursor-pointer pt-3">
+                <input type="checkbox" wire:model="invoiceRequested" class="rounded border-gray-300">
+                <span>Желая фактура</span>
             </label>
+
+            <div x-data="{ open: @entangle('invoiceRequested') }" x-show="open" class="space-y-3">
+                @foreach ([['companyName', 'Име на фирма'], ['companyID', 'ЕИК/Булстат'], ['companyAddress', 'Адрес'], ['companyTaxNumber', 'ДДС номер'], ['companyMol', 'МОЛ']] as [$model, $label])
+                    <div class="space-y-1">
+                        <label class="text-sm font-medium text-gray-700">{{ $label }}</label>
+                        <input type="text" wire:model.defer="{{ $model }}" class="form-input">
+                    </div>
+                @endforeach
+            </div>
+
+            {{-- Payment --}}
+            <div class="space-y-2 pt-4">
+                <p class="text-sm font-semibold text-gray-700">Метод на плащане</p>
+
+                <label class="flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="radio" wire:model="payment_method" value="card" class="text-primary">
+                    <span>Карта (Stripe)</span>
+                </label>
+
+                <label class="flex items-center gap-2 text-sm cursor-pointer">
+                    <input type="radio" wire:model="payment_method" value="cod" class="text-primary">
+                    <span>Наложен платеж</span>
+                </label>
+            </div>
+
+            {{-- Terms --}}
+            <div class="flex gap-2 text-sm">
+                <input type="checkbox" wire:model="terms_accepted" class="rounded border-gray-300">
+                <label>Съгласен съм с <a class="text-primary underline"
+                        href="{{ route('terms-and-conditions.index') }}" target="_blank">общите условия</a></label>
+            </div>
         </div>
-        @error('terms_accepted')
-            <span class="text-sm text-red-500">{{ $message }}</span>
-        @enderror
 
-        <div x-show="$wire.payment_method === 'card'" x-cloak>
-            <div id="card-element" class="mt-4 p-4 border border-gray-300 rounded-md bg-white text-black"></div>
-            <div id="card-errors" class="text-sm text-red-500 mt-2" role="alert"></div>
+        {{-- RIGHT — ORDER SUMMARY --}}
+        <div class="bg-white/90 backdrop-blur-xl p-8 rounded-2xl shadow-xl border border-gray-100 space-y-6">
+
+            <h2 class="text-xl font-bold text-gray-900">Вашата поръчка</h2>
+
+            <ul class="space-y-4">
+                @foreach ($items as $item)
+                    <li class="flex items-center gap-4">
+                        <img src="{{ $item['image'] }}"
+                            class="w-16 h-16 rounded-lg object-contain border bg-gray-50">
+                        <div class="flex-1">
+                            <p class="font-medium">{{ $item['name'] }}</p>
+                            <p class="text-xs text-gray-500">Количество: {{ $item['quantity'] }}</p>
+                        </div>
+                        <p class="font-semibold text-gray-900">
+                            {{ number_format($item['price'] * $item['quantity'], 2) }} лв</p>
+                    </li>
+                @endforeach
+            </ul>
+
+            <div class="border-t pt-3 text-gray-700 space-y-2">
+                <div class="flex justify-between text-sm">
+                    <span>Доставка:</span>
+                    <span>{{ number_format($shippingCost, 2) }} лв</span>
+                </div>
+                <div class="flex justify-between font-bold text-lg text-gray-900">
+                    <span>Общо:</span>
+                    <span>{{ number_format($totalWithShipping, 2) }} лв</span>
+                </div>
+            </div>
+
+            <button wire:click="submitOrder" wire:loading.attr="disabled"
+                class="w-full py-3 rounded-xl bg-primary text-white font-bold">
+                <span wire:loading.remove>Потвърди поръчката</span>
+                <span wire:loading>Обработваме…</span>
+            </button>
         </div>
-
-
-        <button x-data="{
-            loading: false,
-            shipping: @entangle('shippingCost'),
-            get disabled() {
-                return this.loading || this.shipping <= 0;
-            },
-            get buttonText() {
-                if (this.shipping <= 0) return 'Калкулиране на цялата цена...';
-                return this.loading ?
-                    'Моля изчакайте...' :
-                    ($wire.payment_method === 'cod' ?
-                        'Поръчка с наложен платеж' :
-                        'Плащане с карта');
-            },
-            init() {
-                window.addEventListener('orderComplete', () => {
-                    this.loading = false;
-                });
-            }
-        }"
-            @click="if (!disabled) {
-        loading = true;
-        if ($wire.payment_method === 'cod') {
-            $wire.pay().then(() => loading = false);
-        } else {
-            pay();
-        }
-    }"
-            :disabled="disabled"
-            class="w-full mt-4 bg-[var(--color-cta)] text-white py-3 rounded-lg hover:bg-emerald-700 transition font-medium shadow cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-            <template x-if="loading">
-                <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
-                    viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                        stroke-width="4" />
-                    <path class="opacity-75" fill="currentColor"
-                        d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z" />
-                </svg>
-            </template>
-            <span x-text="buttonText"></span>
-        </button>
-
     </div>
+</div>

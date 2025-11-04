@@ -2,9 +2,8 @@
 
 namespace App\Livewire\Components;
 
-use App\Models\Category;
-use App\Models\Brand;
 use Livewire\Component;
+use App\Services\SupplementsAggregatorService;
 
 class CatalogFilters extends Component
 {
@@ -13,9 +12,14 @@ class CatalogFilters extends Component
     public string $sort = 'default';
     public int $perPage = 12;
 
+    public array $categories = [];
+    public array $brands = [];
 
-    public function mount()
+    public function mount(SupplementsAggregatorService $supplements)
     {
+        $this->categories = $supplements->getCategories();
+        $this->brands = $supplements->getBrands();
+
         $this->categorySlugs = request()->query('category')
             ? explode(',', request()->query('category'))
             : [];
@@ -28,25 +32,20 @@ class CatalogFilters extends Component
         $this->perPage = (int)(request()->query('perPage') ?? 12);
     }
 
-
     public function toggleCategory($slug)
     {
-        if (in_array($slug, $this->categorySlugs)) {
-            $this->categorySlugs = array_diff($this->categorySlugs, [$slug]);
-        } else {
-            $this->categorySlugs[] = $slug;
-        }
+        $this->categorySlugs = in_array($slug, $this->categorySlugs)
+            ? array_diff($this->categorySlugs, [$slug])
+            : [...$this->categorySlugs, $slug];
 
         $this->dispatch('filtersUpdated', $this->currentFilters());
     }
 
     public function toggleBrand($slug)
     {
-        if (in_array($slug, $this->brandSlugs)) {
-            $this->brandSlugs = array_diff($this->brandSlugs, [$slug]);
-        } else {
-            $this->brandSlugs[] = $slug;
-        }
+        $this->brandSlugs = in_array($slug, $this->brandSlugs)
+            ? array_diff($this->brandSlugs, [$slug])
+            : [...$this->brandSlugs, $slug];
 
         $this->dispatch('filtersUpdated', $this->currentFilters());
     }
@@ -68,9 +67,6 @@ class CatalogFilters extends Component
 
     public function render()
     {
-        return view('livewire.components.catalog-filters', [
-            'categories' => Category::orderBy('name')->get(),
-            'brands' => Brand::orderBy('name')->get(),
-        ]);
+        return view('livewire.components.catalog-filters');
     }
 }

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ea3e74438a699d8cddceec942184e760",
+    "content-hash": "959b557d76c9e33d39b62471df258590",
     "packages": [
         {
             "name": "brick/math",
@@ -583,16 +583,16 @@
         },
         {
             "name": "gdinko/econt",
-            "version": "dev-master",
+            "version": "v1.0.17",
             "source": {
                 "type": "git",
-                "url": "https://github.com/YordanY1/econt.git",
-                "reference": "a5dd11de838a60f277bca25677053937bb309f55"
+                "url": "https://github.com/gdinko/econt.git",
+                "reference": "6b7a625aae2e5dde6a5eb138e5292b31582bb69d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/YordanY1/econt/zipball/a5dd11de838a60f277bca25677053937bb309f55",
-                "reference": "a5dd11de838a60f277bca25677053937bb309f55",
+                "url": "https://api.github.com/repos/gdinko/econt/zipball/6b7a625aae2e5dde6a5eb138e5292b31582bb69d",
+                "reference": "6b7a625aae2e5dde6a5eb138e5292b31582bb69d",
                 "shasum": ""
             },
             "require": {
@@ -611,16 +611,15 @@
                 "phpstan/phpstan-phpunit": "^1.1",
                 "phpunit/phpunit": "^9.0"
             },
-            "default-branch": true,
             "type": "library",
             "extra": {
                 "laravel": {
-                    "providers": [
-                        "Gdinko\\Econt\\EcontServiceProvider"
-                    ],
                     "aliases": {
                         "Econt": "Gdinko\\Econt\\Facades\\Econt"
-                    }
+                    },
+                    "providers": [
+                        "Gdinko\\Econt\\EcontServiceProvider"
+                    ]
                 }
             },
             "autoload": {
@@ -628,22 +627,7 @@
                     "Gdinko\\Econt\\": "src"
                 }
             },
-            "autoload-dev": {
-                "psr-4": {
-                    "Gdinko\\Econt\\Tests\\": "tests"
-                }
-            },
-            "scripts": {
-                "analyse": [
-                    "vendor/bin/phpstan analyse"
-                ],
-                "test": [
-                    "vendor/bin/pest"
-                ],
-                "test-coverage": [
-                    "vendor/bin/pest --coverage"
-                ]
-            },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
@@ -663,9 +647,10 @@
                 "laravel"
             ],
             "support": {
-                "source": "https://github.com/YordanY1/econt/tree/master"
+                "issues": "https://github.com/gdinko/econt/issues",
+                "source": "https://github.com/gdinko/econt/tree/v1.0.17"
             },
-            "time": "2025-06-08T16:44:47+00:00"
+            "time": "2025-08-18T11:05:33+00:00"
         },
         {
             "name": "graham-campbell/result-type",
@@ -8301,14 +8286,12 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "gdinko/econt": 20
-    },
+    "stability-flags": [],
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
         "php": "^8.2"
     },
-    "platform-dev": {},
+    "platform-dev": [],
     "plugin-api-version": "2.6.0"
 }

@@ -19,7 +19,9 @@ Route::get('/checkout', Checkout::class)->name('checkout');
 Route::get('/thank-you', ThankYou::class)->name('thank-you');
 Route::get('/terms-and-conditions', TermsAndConditions::class)->name('terms-and-conditions.index');
 
+Route::get('/product/{slug}', \App\Livewire\Pages\Product::class)->name('product.show');
 
 
-// Econt Offices route
-Route::get('/econt-offices', EcontOffices::class);
+Route::get('/stripe/create/{order}', [\App\Http\Controllers\StripeController::class, 'create'])->name('stripe.create');
+Route::get('/stripe/success', [\App\Http\Controllers\StripeController::class, 'success'])->name('stripe.success');
+Route::get('/stripe/cancel', [\App\Http\Controllers\StripeController::class, 'cancel'])->name('stripe.cancel');

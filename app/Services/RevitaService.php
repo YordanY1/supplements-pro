@@ -39,7 +39,14 @@ class RevitaService
                     'source' => 'revita',
                 ];
             })
-            ->filter(fn($p) => $p['brand_name'])
+            ->tap(function ($collection) {
+                $total = $collection->count();
+                $noPrice = $collection->whereNull('price')->count();
+
+                logger()->info("Revita total products: {$total}");
+                logger()->info("Revita products with NO price: {$noPrice}");
+                logger()->info("Revita products WITH price: " . ($total - $noPrice));
+            })
             ->toArray();
     }
 

@@ -2,22 +2,32 @@
 
 namespace App\Support;
 
-use Illuminate\Validation\Rule;
-
 class CheckoutValidation
 {
-    public static function rules(bool $invoiceRequested = false): array
+    public static function rules(string $shippingMethod, bool $invoiceRequested = false): array
     {
         $rules = [
             'first_name' => ['required', 'string', 'min:2', 'max:50'],
             'last_name'  => ['required', 'string', 'min:2', 'max:50'],
             'email'      => ['required', 'email'],
             'phone'      => ['required', 'regex:/^[0-9\+\-\s]{7,20}$/'],
-            'city'       => ['required', 'string', 'min:2', 'max:50'],
-            'zip'        => ['required', 'string', 'min:4', 'max:10'],
-            'street'     => ['required', 'string', 'min:3', 'max:100'],
-            'terms_accepted' => ['accepted']
+            'terms_accepted' => ['accepted'],
+            'shipping_method' => ['required', 'in:address,econt_office'],
         ];
+
+        if ($shippingMethod === 'address') {
+            $rules += [
+                'cityId'     => ['required', 'integer'],
+                'streetCode' => ['required', 'integer'],
+                'streetNum'  => ['required', 'string', 'max:20'],
+            ];
+        }
+
+        if ($shippingMethod === 'econt_office') {
+            $rules += [
+                'officeCode' => ['required', 'string'],
+            ];
+        }
 
         if ($invoiceRequested) {
             $rules += [
@@ -32,35 +42,32 @@ class CheckoutValidation
         return $rules;
     }
 
+
     public static function messages(): array
     {
         return [
             'first_name.required' => 'Моля, въведете вашето име.',
-            'first_name.min' => 'Името трябва да съдържа поне 2 символа.',
-            'first_name.max' => 'Името не може да надвишава 50 символа.',
-
             'last_name.required' => 'Моля, въведете вашата фамилия.',
-            'last_name.min' => 'Фамилията трябва да съдържа поне 2 символа.',
-            'last_name.max' => 'Фамилията не може да надвишава 50 символа.',
-
             'email.required' => 'Имейлът е задължителен.',
             'email.email' => 'Моля, въведете валиден имейл адрес.',
-
             'phone.required' => 'Моля, въведете телефонен номер.',
             'phone.regex' => 'Телефонният номер съдържа невалидни символи.',
 
-            'city.required' => 'Моля, въведете град или село.',
-            'zip.required' => 'Моля, въведете пощенски код.',
-            'street.required' => 'Моля, въведете улица.',
+            'shipping_method.required' => 'Моля, изберете метод на доставка.',
 
+            // Address
+            'cityId.required' => 'Моля, изберете населено място.',
+            'streetCode.required' => 'Моля, изберете улица.',
+            'streetNum.required' => 'Моля, въведете номер.',
+
+            // Office
+            'officeCode.required' => 'Моля, изберете офис на Еконт.',
+
+            // Invoice
             'companyName.required' => 'Моля, въведете името на фирмата.',
             'companyID.required' => 'Моля, въведете ЕИК/Булстат.',
             'companyAddress.required' => 'Моля, въведете адрес на фирмата.',
-            'companyMol.required' => 'Моля, въведете МОЛ (представител).',
-
-            // 'terms_accepted.required' => 'Трябва да се съгласите с Общите условия.',
-            // 'terms_accepted.accepted' => 'Необходимо е да приемете Общите условия, за да продължите.',
-
+            'companyMol.required' => 'Моля, въведете МОЛ.',
         ];
     }
 }
