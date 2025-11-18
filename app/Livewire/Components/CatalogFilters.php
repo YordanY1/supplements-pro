@@ -3,7 +3,7 @@
 namespace App\Livewire\Components;
 
 use Livewire\Component;
-use App\Services\SupplementsAggregatorService;
+use App\Services\DatabaseProductsService;
 
 class CatalogFilters extends Component
 {
@@ -15,10 +15,10 @@ class CatalogFilters extends Component
     public array $categories = [];
     public array $brands = [];
 
-    public function mount(SupplementsAggregatorService $supplements)
+    public function mount(DatabaseProductsService $db)
     {
-        $this->categories = $supplements->getCategories();
-        $this->brands = $supplements->getBrands();
+        $this->categories = $db->getCategories();
+        $this->brands = $db->getBrands();
 
         $this->categorySlugs = request()->query('category')
             ? explode(',', request()->query('category'))

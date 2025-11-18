@@ -3,17 +3,17 @@
 namespace App\Livewire\Components;
 
 use Livewire\Component;
-use App\Services\SupplementsAggregatorService;
+use App\Services\DatabaseProductsService;
 
 class Header extends Component
 {
     public $categories = [];
     public $brands = [];
 
-    public function mount(SupplementsAggregatorService $supplements)
+    public function mount(DatabaseProductsService $db)
     {
-        $this->categories = $supplements->getCategories();
-        $this->brands = $supplements->getBrands();
+        $this->categories = $db->getCategories();
+        $this->brands = $db->getBrands();
     }
 
     public function render()

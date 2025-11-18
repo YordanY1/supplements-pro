@@ -70,9 +70,9 @@
             {{-- Content --}}
             <div>
                 {{-- Description --}}
-                <div x-show="tab === 'description'" class="text-gray-700 leading-relaxed">
-                    @if (!empty($product['description']))
-                        {!! $product['description'] !!}
+                <div x-show="tab === 'description'" class="text-gray-700 leading-relaxed prose max-w-none">
+                    @if (!empty($product['description_html']))
+                        <div class="prose max-w-none">{!! $product['description_html'] !!}</div>
                     @else
                         <p>Описанието ще бъде заредено автоматично от доставчика.</p>
                     @endif
@@ -80,12 +80,15 @@
 
                 {{-- Supplement Facts --}}
                 <div x-show="tab === 'label'" class="mt-4">
-                    @if (!empty($product['label']))
+                    @if (!empty($product['supplement_facts_html']))
+                        {!! $product['supplement_facts_html'] !!}
+                    @elseif(!empty($product['label']))
                         <img src="{{ $product['label'] }}" class="rounded-lg shadow border max-w-md">
                     @else
-                        <p class="text-gray-600">Няма наличен етикет.</p>
+                        <p class="text-gray-600">Няма данни за състав.</p>
                     @endif
                 </div>
+
 
                 {{-- Brand --}}
                 <div x-show="tab === 'brand'" class="text-gray-700">

@@ -4,8 +4,8 @@ namespace App\Livewire\Pages;
 
 use Livewire\Component;
 use Livewire\Attributes\Url;
-use App\Services\SupplementsAggregatorService;
 use Illuminate\Support\Str;
+use App\Models\Product;
 
 class Catalog extends Component
 {
@@ -24,20 +24,34 @@ class Catalog extends Component
     #[Url]
     public int $page = 1;
 
-    public array $allProducts = [];
     public array $categories = [];
     public array $brands = [];
 
-    public function mount(SupplementsAggregatorService $supplements)
+    public function mount()
     {
-        $products = collect($supplements->getProducts())
-            ->filter(fn($p) => $p['title'])
-            ->values();
+        // Categories
+        $this->categories = Product::query()
+            ->whereNotNull('category')
+            ->select('category')
+            ->distinct()
+            ->get()
+            ->map(fn($c) => [
+                'name' => $c->category,
+                'slug' => Str::slug($c->category),
+            ])
+            ->toArray();
 
-        $this->allProducts = $products->toArray();
-
-        $this->categories = $supplements->getCategories();
-        $this->brands = $supplements->getBrands();
+        // Brands
+        $this->brands = Product::query()
+            ->whereNotNull('brand_name')
+            ->select('brand_name')
+            ->distinct()
+            ->get()
+            ->map(fn($b) => [
+                'name' => $b->brand_name,
+                'slug' => Str::slug($b->brand_name),
+            ])
+            ->toArray();
     }
 
     public function toggleCategory($slug)
@@ -68,6 +82,47 @@ class Catalog extends Component
         $this->page = 1;
     }
 
+
+    protected function query()
+    {
+        $q = Product::query();
+
+        // Category filter
+        if ($this->category) {
+            $categories = explode(',', $this->category);
+
+            $q->where(function ($q) use ($categories) {
+                foreach ($categories as $cat) {
+                    $q->orWhereRaw(
+                        "REPLACE(LOWER(category), ' ', '-') = ?",
+                        [$cat]
+                    );
+                }
+            });
+        }
+
+
+        // Brand filter
+        if ($this->brand) {
+            $brands = explode(',', $this->brand);
+            $q->where(function ($q) use ($brands) {
+                foreach ($brands as $b) {
+                    $q->orWhereRaw('LOWER(REPLACE(brand_name, " ", "-")) = ?', [$b]);
+                }
+            });
+        }
+
+        // Sort
+        match ($this->sort) {
+            'price_asc'  => $q->orderBy('price', 'asc'),
+            'price_desc' => $q->orderBy('price', 'desc'),
+            default      => $q->orderBy('id', 'desc'),
+        };
+
+        return $q;
+    }
+
+
     public function updatedSort()
     {
         $this->page = 1;
@@ -77,53 +132,26 @@ class Catalog extends Component
         $this->page = 1;
     }
 
-    public function getFilteredProducts()
-    {
-        $products = collect($this->allProducts);
-
-        if ($this->category) {
-            $categories = explode(',', $this->category);
-            $products = $products->filter(
-                fn($p) =>
-                in_array(Str::slug($p['category'] ?? ''), $categories)
-            );
-        }
-
-        if ($this->brand) {
-            $brands = explode(',', $this->brand);
-            $products = $products->filter(
-                fn($p) =>
-                in_array(Str::slug($p['brand_name'] ?? ''), $brands)
-            );
-        }
-
-        return match ($this->sort) {
-            'price_asc' => $products->sortBy('price')->values(),
-            'price_desc' => $products->sortByDesc('price')->values(),
-            default => $products->values(),
-        };
-    }
-
     public function addToCart($productId)
     {
+        $product = Product::find($productId);
+        if (! $product) return;
+
         $cart = session()->get('cart', []);
-
-        $product = collect($this->allProducts)->firstWhere('id', $productId);
-
-        if (!$product) return;
 
         if (isset($cart[$productId])) {
             $cart[$productId]['quantity']++;
         } else {
             $cart[$productId] = [
-                'id'       => $product['id'],
-                'name'     => $product['title'],
-                'price'    => $product['price'],
-                'currency' => $product['currency_symbol'] ?? 'лв.',
+                'id'       => $product->id,
+                'name'     => $product->title,
+                'price'    => (float)$product->price,
+                'currency' => 'лв.',
                 'quantity' => 1,
-                'image'    => $product['image'],
-                'slug'     => $product['slug'] ?? null,
-                'weight'   => $product['weight'] ?? null,
+                'image'    => $product->image,
+                'slug'     => $product->slug,
+                'weight'   => $product->weight ?? null,
+                'source'   => $product->source ?? null,
             ];
         }
 
@@ -134,19 +162,15 @@ class Catalog extends Component
 
     public function render()
     {
-        $products = $this->getFilteredProducts();
-
-        $paginated = $products
-            ->forPage($this->page, $this->perPage)
-            ->values()
-            ->toArray();
+        $products = $this->query()
+            ->paginate($this->perPage, page: $this->page);
 
         return view('livewire.pages.catalog', [
-            'products' => $paginated,
-            'total' => $products->count(),
+            'products' => $products->items(),
+            'total' => $products->total(),
             'page' => $this->page,
             'perPage' => $this->perPage,
-            'title' => $this->category || $this->brand ? 'Филтрирани продукти' : 'Всички продукти',
+            'title' => ($this->category || $this->brand) ? 'Филтрирани продукти' : 'Всички продукти',
         ])->layout('layouts.app');
     }
 }

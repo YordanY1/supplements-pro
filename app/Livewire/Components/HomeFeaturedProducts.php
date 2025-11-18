@@ -3,18 +3,32 @@
 namespace App\Livewire\Components;
 
 use Livewire\Component;
-use App\Services\SupplementsAggregatorService;
+use App\Models\Product;
 
 class HomeFeaturedProducts extends Component
 {
     public array $products = [];
 
-    public function mount(SupplementsAggregatorService $aggregator)
+    public function mount()
     {
-        $this->products = collect($aggregator->getProducts())
-            ->shuffle()
-            ->take(3)
-            ->values()
+        $this->products = Product::inRandomOrder()
+            ->limit(3)
+            ->get()
+            ->map(function ($p) {
+                return [
+                    'id'         => $p->id,
+                    'vendor_id'  => $p->vendor_id,
+                    'title'      => $p->title,
+                    'slug'       => $p->slug,
+                    'brand_name' => $p->brand_name,
+                    'category'   => $p->category,
+                    'price'      => $p->price,
+                    'currency'   => 'лв.',
+                    'image'      => $p->image,
+                    'weight'     => null,
+                    'source'     => $p->source,
+                ];
+            })
             ->toArray();
     }
 
@@ -22,29 +36,29 @@ class HomeFeaturedProducts extends Component
     {
         $cart = session()->get('cart', []);
 
-        $product = collect($this->products)->firstWhere('id', $productId);
-
+        $product = \App\Models\Product::find($productId);
         if (! $product) return;
 
         if (isset($cart[$productId])) {
             $cart[$productId]['quantity']++;
         } else {
             $cart[$productId] = [
-                'id'       => $product['id'],
-                'name'     => $product['title'],
-                'price'    => $product['price'],
-                'currency' => $product['currency_symbol'] ?? 'лв.',
+                'id'       => $product->id,
+                'name'     => $product->title,
+                'price'    => (float)$product->price,
+                'currency' => 'лв.',
                 'quantity' => 1,
-                'image'    => $product['image'],
-                'slug'     => $product['slug'],
-                'weight'   => $product['weight'] ?? null,
-                'source'   => $product['source'] ?? null,
+                'image'    => $product->image,
+                'slug'     => $product->slug,
+                'weight'   => $product->weight ?? null,
+                'source'   => $product->source ?? null,
             ];
         }
 
         session()->put('cart', $cart);
         $this->dispatch('cart-updated');
     }
+
 
     public function render()
     {

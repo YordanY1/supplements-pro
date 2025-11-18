@@ -18,87 +18,54 @@ class SupplementsAggregatorService
         $this->revita = $revita;
     }
 
-    protected function normalizeRevitaProduct(array $p): ?array
-    {
-        $title = $p['name'] ?? $p['Short_Description'] ?? null;
-        if (!$title) return null;
-
-        $regular = $p['Regular_price'] ?? 0;
-        $sale = $p['Sale_price'] ?? 0;
-
-        return [
-            'id'    => $p['upc'] ?? $p['SKU'] ?? md5($title),
-            'title' => $title,
-            'brand_name' => $p['Brand'] ?? 'Неизвестен бранд',
-            'category' => $p['Category'] ?? null,
-
-            // Price + old price
-            'price' => (float)($sale > 0 ? $sale : $regular),
-            'old_price' => $sale > 0 ? (float)$regular : null,
-
-            // Image
-            'image' => $p['images'][0] ?? $p['Image_URL'] ?? null,
-
-            // Description
-            'description' => $p['Long_Description']
-                ?? $p['Short_Description']
-                ?? null,
-
-            // Supplement Facts Label
-            'label' => $p['Label_Image']
-                ?? ($p['images'][1] ?? null)
-                ?? null,
-
-            'currency_symbol' => 'лв.',
-            'slug' => Str::slug($title),
-            'source' => 'revita',
-        ];
-    }
-
-
     protected function normalizeFitness1Product(array $p): array
     {
         $regular = $p['regular_price'] ?? 0;
-        $sale = $p['sale_price'] ?? 0;
+        $sale    = $p['sale_price'] ?? 0;
 
         return [
             'id' => $p['id'] ?? $p['product_id'],
             'title' => $p['product_name'] ?? null,
+            'slug'  => Str::slug($p['product_name'] ?? ''),
+
             'brand_name' => $p['brand_name'] ?? null,
             'category' => explode(' > ', $p['category'])[0] ?? null,
-            'price' => (float)($sale > 0 ? $sale : $regular),
+
+            'price'     => (float)($sale > 0 ? $sale : $regular),
             'old_price' => $sale > 0 ? (float)$regular : null,
-            'image' => $p['image'] ?? null,
-            'currency_symbol' => 'лв.',
-            'slug' => Str::slug($p['product_name'] ?? ''),
+            'stock'     => $p['available'] ? 1 : 0,
+
             'source' => 'fitness1',
+
+            'image'  => $p['image'] ?? null,
+            'images' => [$p['image'] ?? null],
+
+            'sku' => $p['product_id'] ?? null,
+            'upc' => $p['barcode'] ?? null,
+            'ean' => null,
         ];
     }
 
-
     protected function loadProducts(): array
     {
-        return Cache::remember('supplements.all_products', now()->addMinutes(10), function () {
+        $fitness = collect($this->fitness->getProducts())
+            ->map(fn($p) => $this->normalizeFitness1Product($p));
 
-            $fitnessProducts = collect($this->fitness->getProducts())
-                ->map(fn($p) => $this->normalizeFitness1Product($p));
+        $revita = collect($this->revita->getProducts());
 
-            $revitaProducts = collect($this->revita->getProducts())
-                ->map(fn($p) => $this->normalizeRevitaProduct($p))
-                ->filter();
+        $fitnessKeys = $fitness
+            ->map(fn($p) => $p['upc'] ?? $p['sku'] ?? $p['slug'])
+            ->filter()
+            ->unique()
+            ->toArray();
 
-            $existingSlugs = $fitnessProducts->pluck('slug')->toArray();
+        $revita = $revita->reject(
+            fn($p) => in_array($p['upc'] ?? $p['sku'] ?? $p['slug'], $fitnessKeys)
+        );
 
-            $filteredRevita = $revitaProducts->reject(
-                fn($p) =>
-                in_array($p['slug'], $existingSlugs)
-            );
-
-            return $fitnessProducts->merge($filteredRevita)
-                ->values()
-                ->toArray();
-        });
+        return $fitness->merge($revita)->values()->toArray();
     }
+
 
     public function getProducts(): array
     {
@@ -107,39 +74,31 @@ class SupplementsAggregatorService
 
     public function getCategories(): array
     {
-        return Cache::remember('supplements.categories', now()->addMinutes(10), function () {
-            return collect($this->getProducts())
-                ->pluck('category')
-                ->filter()
-                ->unique()
-                ->map(fn($cat) => [
-                    'name' => $cat,
-                    'slug' => Str::slug($cat),
-                ])
-                ->values()
-                ->toArray();
-        });
+        return collect($this->getProducts())
+            ->pluck('category')
+            ->filter()
+            ->unique()
+            ->sort()
+            ->map(fn($cat) => [
+                'name' => $cat,
+                'slug' => Str::slug($cat),
+            ])
+            ->values()
+            ->toArray();
     }
 
     public function getBrands(): array
     {
-        return Cache::remember('supplements.brands', now()->addMinutes(10), function () {
-            return collect($this->getProducts())
-                ->pluck('brand_name')
-                ->filter()
-                ->unique()
-                ->map(fn($brand) => [
-                    'name' => $brand,
-                    'slug' => Str::slug($brand),
-                ])
-                ->values()
-                ->toArray();
-        });
-    }
-
-    public function getProductById($id): ?array
-    {
         return collect($this->getProducts())
-            ->firstWhere('id', $id);
+            ->pluck('brand_name')
+            ->filter()
+            ->unique()
+            ->sort()
+            ->map(fn($brand) => [
+                'name' => $brand,
+                'slug' => Str::slug($brand),
+            ])
+            ->values()
+            ->toArray();
     }
 }

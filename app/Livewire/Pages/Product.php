@@ -9,15 +9,12 @@ class Product extends Component
 {
     public array $product;
 
-    public function mount($slug, SupplementsAggregatorService $sup)
+    public function mount($slug)
     {
-        $product = collect($sup->getProducts())
-            ->first(fn($p) => $p['slug'] === $slug);
-
-        abort_unless($product, 404);
-
-        $this->product = $product;
+        $product = \App\Models\Product::where('slug', $slug)->firstOrFail();
+        $this->product = $product->toArray();
     }
+
 
     public function addToCart()
     {
@@ -29,19 +26,23 @@ class Product extends Component
             $cart[$id]['quantity']++;
         } else {
             $cart[$id] = [
-                'id' => $this->product['id'],
-                'name' => $this->product['title'],
-                'price' => $this->product['price'],
-                'currency' => $this->product['currency_symbol'],
+                'id'       => $this->product['id'],
+                'name'     => $this->product['title'],
+                'price'    => (float)$this->product['price'],
+                'currency' => 'лв.',
                 'quantity' => 1,
-                'image' => $this->product['image'],
-                'slug' => $this->product['slug'],
+                'image'    => $this->product['image'],
+                'slug'     => $this->product['slug'],
+                'weight'   => $this->product['weight'] ?? null,
+                'source'   => $this->product['source'] ?? null,
             ];
         }
 
         session()->put('cart', $cart);
         $this->dispatch('cart-updated');
     }
+
+
 
     public function render()
     {

@@ -11,6 +11,13 @@ class Product extends Model
 {
     use HasFactory;
 
+    protected $guarded = ['id'];
+
+    protected $casts = [
+        'images' => 'array',
+        'raw' => 'array',
+    ];
+
     public function getRouteKeyName(): string
     {
         return 'slug';
