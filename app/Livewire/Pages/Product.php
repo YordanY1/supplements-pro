@@ -3,7 +3,7 @@
 namespace App\Livewire\Pages;
 
 use Livewire\Component;
-use App\Services\SupplementsAggregatorService;
+use App\Models\Product as ProductModel;
 
 class Product extends Component
 {
@@ -11,10 +11,30 @@ class Product extends Component
 
     public function mount($slug)
     {
-        $product = \App\Models\Product::where('slug', $slug)->firstOrFail();
-        $this->product = $product->toArray();
-    }
+        $model = ProductModel::where('slug', $slug)->firstOrFail();
 
+        $this->product = [
+            'id'                    => $model->id,
+            'title'                 => $model->title,
+            'slug'                  => $model->slug,
+            'brand_name'            => $model->brand_name,
+            'category'              => $model->category,
+            'price'                 => $model->price,
+            'old_price'             => $model->old_price,
+            'image'                 => $model->image,
+            'images' => is_array($model->images)
+                ? $model->images
+                : (json_decode($model->images ?? '[]', true) ?? []),
+
+            'description_html'      => $model->description_html,
+            'supplement_facts_html' => $model->supplement_facts_html,
+            'label'                 => $model->label,
+            'weight'                => $model->weight,
+            'source'                => $model->source,
+            'pack'                  => $model->pack ?? null,
+            'available'             => $model->stock > 0,
+        ];
+    }
 
     public function addToCart()
     {
@@ -26,15 +46,15 @@ class Product extends Component
             $cart[$id]['quantity']++;
         } else {
             $cart[$id] = [
-                'id'       => $this->product['id'],
+                'id'       => $id,
                 'name'     => $this->product['title'],
                 'price'    => (float)$this->product['price'],
                 'currency' => 'лв.',
                 'quantity' => 1,
                 'image'    => $this->product['image'],
                 'slug'     => $this->product['slug'],
-                'weight'   => $this->product['weight'] ?? null,
-                'source'   => $this->product['source'] ?? null,
+                'weight'   => $this->product['weight'],
+                'source'   => $this->product['source'],
             ];
         }
 
@@ -42,10 +62,9 @@ class Product extends Component
         $this->dispatch('cart-updated');
     }
 
-
-
     public function render()
     {
-        return view('livewire.pages.product')->layout('layouts.app');
+        return view('livewire.pages.product')
+            ->layout('layouts.app');
     }
 }
