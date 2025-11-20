@@ -1,7 +1,7 @@
 <div class="bg-light min-h-screen py-16 px-6 font-primary text-dark">
     <div class="max-w-6xl mx-auto text-center">
         <h1 class="text-5xl font-extrabold mb-6 text-primary animate-scale-fade-in tracking-wide">
-            SupplementsPro
+            Holistica
         </h1>
 
         <p class="text-lg text-dark/70 mb-12 max-w-2xl mx-auto">
@@ -9,8 +9,9 @@
         </p>
 
         <div class="rounded-2xl overflow-hidden shadow-2xl mb-16 animate-scale-fade-in">
-            <img src="{{ asset('images/background.jpg') }}" alt="Banner"
-                class="w-full h-[430px] object-cover object-center">
+            <img src="{{ asset('images/background.png') }}" alt="Banner" class="w-full h-auto object-contain">
+
+
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
@@ -24,6 +25,14 @@
                     <p class="text-dark/80">{{ $item['desc'] }}</p>
                 </div>
             @endforeach
+        </div>
+
+        <div class="mt-12">
+            <livewire:components.home-featured-brands />
+        </div>
+
+        <div class="mt-12">
+            <livewire:components.home-women-brands />
         </div>
 
         <div class="mt-12">

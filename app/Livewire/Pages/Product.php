@@ -22,10 +22,9 @@ class Product extends Component
             'price'                 => $model->price,
             'old_price'             => $model->old_price,
             'image'                 => $model->image,
-            'images' => is_array($model->images)
+            'images'                => is_array($model->images)
                 ? $model->images
                 : (json_decode($model->images ?? '[]', true) ?? []),
-
             'description_html'      => $model->description_html,
             'supplement_facts_html' => $model->supplement_facts_html,
             'label'                 => $model->label,
@@ -39,7 +38,6 @@ class Product extends Component
     public function addToCart()
     {
         $cart = session()->get('cart', []);
-
         $id = $this->product['id'];
 
         if (isset($cart[$id])) {
@@ -64,7 +62,52 @@ class Product extends Component
 
     public function render()
     {
-        return view('livewire.pages.product')
-            ->layout('layouts.app');
+        $p = $this->product;
+
+        return view('livewire.pages.product', [
+            'product' => $p,
+        ])->layout('layouts.app', [
+            'title'       => $p['title'] . ' – Holistica',
+            'description' => strip_tags(substr($p['description_html'] ?? '', 0, 180)),
+            'image'       => $p['image'] ?? asset('images/logo-removebg.jpg'),
+            'robots'      => 'index, follow',
+            'ogType'      => 'product',
+
+            'breadcrumb' => [
+                ['name' => 'Начало', 'url' => url('/')],
+                ['name' => 'Каталог', 'url' => url('/catalog')],
+                ['name' => $p['title'], 'url' => url('/product/' . $p['slug'])],
+            ],
+
+            'productSchema' => [
+                '@type' => 'Product',
+                'name'  => $p['title'],
+                'image' => array_merge([$p['image']], $p['images']),
+                'description' => strip_tags($p['description_html']),
+                'brand' => [
+                    '@type' => 'Brand',
+                    'name'  => $p['brand_name'] ?? 'Holistica',
+                ],
+                'category' => $p['category'] ?? null,
+                'sku'      => $p['id'],
+                'offers' => [
+                    '@type'           => 'Offer',
+                    'url'             => url('/product/' . $p['slug']),
+                    'priceCurrency'   => 'BGN',
+                    'price'           => $p['price'],
+                    'availability'    => $p['available']
+                        ? 'https://schema.org/InStock'
+                        : 'https://schema.org/OutOfStock',
+                    'itemCondition'   => 'https://schema.org/NewCondition',
+                ],
+            ],
+
+            'organizationSchema' => [
+                '@type' => 'Organization',
+                'name'  => 'Holistica',
+                'url'   => url('/'),
+                'logo'  => asset('images/logo-removebg.jpg'),
+            ],
+        ]);
     }
 }

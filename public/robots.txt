@@ -1,2 +1,13 @@
 User-agent: *
-Disallow:
+Allow: /
+
+Disallow: /cart
+Disallow: /checkout
+Disallow: /thank-you
+Disallow: /stripe/
+Disallow: /terms-and-conditions
+
+Disallow: /*?*
+Disallow: /*&*
+
+Sitemap: https://domena.bg/sitemap.xml
