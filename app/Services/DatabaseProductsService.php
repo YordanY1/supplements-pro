@@ -7,6 +7,29 @@ use Illuminate\Support\Str;
 
 class DatabaseProductsService
 {
+
+    private function resolveBrandImage(string $brandName): ?string
+    {
+        $dir = public_path('images/brands');
+        $files = scandir($dir);
+
+        $keyword = strtolower(preg_replace('/[^A-Za-z0-9]/', '', explode(' ', $brandName)[0]));
+
+        foreach ($files as $file) {
+            if (in_array($file, ['.', '..'])) continue;
+
+            $name = strtolower(pathinfo($file, PATHINFO_FILENAME));
+
+            if (str_starts_with($name, $keyword)) {
+                return $file;
+            }
+        }
+
+        return null;
+    }
+
+
+
     public function getCategories(): array
     {
         return Product::query()
@@ -24,7 +47,7 @@ class DatabaseProductsService
 
     public function getBrands(): array
     {
-        return Product::query()
+        $brands = Product::query()
             ->whereNotNull('brand_slug')
             ->select('brand_name', 'brand_slug')
             ->distinct()
@@ -35,7 +58,18 @@ class DatabaseProductsService
                 'slug' => $b->brand_slug,
             ])
             ->toArray();
+
+        return collect($brands)
+            ->map(function ($brand) {
+                return [
+                    'name'  => $brand['name'],
+                    'slug'  => $brand['slug'],
+                    'image' => $this->resolveBrandImage($brand['name']),
+                ];
+            })
+            ->toArray();
     }
+
 
     public function getProducts(array $filters = [])
     {

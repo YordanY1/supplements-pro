@@ -14,7 +14,6 @@ class HomeFeaturedBrands extends Component
         $brands = $db->getBrands();
 
         $this->brands = collect($brands)
-            ->shuffle()
             ->take(6)
             ->values()
             ->toArray();

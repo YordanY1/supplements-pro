@@ -11,6 +11,11 @@
                       rounded-xl p-4 text-center shadow-sm hover:shadow-md
                       hover:bg-secondary/30 transition">
 
+                @if (!empty($brand['image']))
+                    <img src="{{ asset('images/brands/' . $brand['image']) }}" alt="{{ $brand['name'] }}"
+                        class="mx-auto h-12 w-auto object-contain mb-3">
+                @endif
+
                 <p class="font-semibold text-dark text-sm tracking-wide">
                     {{ $brand['name'] }}
                 </p>

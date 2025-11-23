@@ -8,8 +8,11 @@
         @foreach ($brands as $brand)
             <a href="{{ route('catalog.brand', $brand['slug']) }}"
                 class="block p-5 rounded-xl text-center border border-secondary/50
-                       bg-secondary/20 hover:bg-secondary/30
-                       shadow-sm hover:shadow-md transition-all duration-200">
+                      bg-secondary/20 hover:bg-secondary/30
+                      shadow-sm hover:shadow-md transition-all duration-200">
+
+                <img src="{{ asset('images/brands/' . $brand['image']) }}" alt="{{ $brand['name'] }}"
+                    class="mx-auto h-12 w-auto object-contain mb-3">
 
                 <p class="font-semibold text-dark text-sm tracking-wide">
                     {{ $brand['name'] }}
